@@ -1245,26 +1245,476 @@
             margin-left: 6px;
         }
 
+        .btn-mobile-header {
+            display: none;
+        }
+
+        /* Full Responsive Overhaul for Mobile & Tablets */
         @media (max-width: 768px) {
-            .nav-links { display: none; }
-            h1.hero-title { font-size: 2.3rem; }
-            .hero-cta-group { flex-direction: column; width: 100%; }
-            .zero-install-banner { margin: 0 auto 26px auto; padding: 12px 16px; font-size: 0.88rem; gap: 10px; }
-            .specs-bar { gap: 10px; }
-            .security-trust-box { padding: 18px; }
-            .trust-cards-grid { grid-template-columns: 1fr; }
-            .trust-verified-pill { margin-left: 0; margin-top: 8px; }
-            .trust-box-header { flex-direction: column; align-items: flex-start; }
+            html, body {
+                overflow-x: hidden;
+                width: 100%;
+            }
+
+            .container {
+                padding: 0 16px;
+            }
+
+            /* Navbar Mobile */
+            header.navbar {
+                padding: 12px 0;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .brand {
+                font-size: 1.22rem;
+                gap: 9px;
+            }
+
+            .brand img {
+                width: 30px;
+                height: 30px;
+            }
+
+            .btn-mobile-header {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 7px 14px;
+                background: linear-gradient(135deg, var(--cyan) 0%, #0284c7 100%);
+                color: #030811;
+                font-weight: 800;
+                font-size: 0.8rem;
+                border-radius: 9px;
+                text-decoration: none;
+                box-shadow: 0 0 15px rgba(0, 240, 255, 0.35);
+            }
+
+            /* Hero Section Mobile */
+            section.hero {
+                padding: 44px 0 36px 0;
+            }
+
+            .hero-badge-pill {
+                padding: 5px 12px;
+                font-size: 0.72rem;
+                letter-spacing: 0.5px;
+                margin-bottom: 18px;
+                max-width: 100%;
+                text-align: center;
+            }
+
+            .desktop-br {
+                display: none;
+            }
+
+            h1.hero-title {
+                font-size: clamp(1.75rem, 6.2vw, 2.2rem);
+                letter-spacing: -0.5px;
+                line-height: 1.22;
+                margin-bottom: 14px;
+                word-break: break-word;
+            }
+
+            p.hero-subtitle {
+                font-size: 0.92rem;
+                line-height: 1.5;
+                margin: 0 auto 24px auto;
+                padding: 0 6px;
+            }
+
+            .hero-cta-group {
+                flex-direction: column;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+
+            .btn-primary-dl {
+                width: 100%;
+                max-width: 360px;
+                padding: 13px 18px;
+                font-size: 0.95rem;
+                justify-content: center;
+                border-radius: 12px;
+                gap: 8px;
+            }
+
+            .btn-size-badge {
+                font-size: 0.72rem;
+                padding: 2px 7px;
+            }
+
+            /* Zero Install Banner Mobile */
+            .zero-install-banner {
+                margin: 0 auto 22px auto;
+                padding: 12px 14px;
+                font-size: 0.85rem;
+                gap: 10px;
+                border-radius: 14px;
+                line-height: 1.45;
+                text-align: left;
+            }
+
+            .zero-install-icon {
+                font-size: 1.3rem;
+            }
+
+            /* Specs Bar 2x2 Grid Mobile */
+            .specs-bar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                width: 100%;
+                max-width: 440px;
+                margin: 0 auto;
+            }
+
+            .spec-item {
+                padding: 7px 10px;
+                font-size: 0.75rem;
+                justify-content: center;
+                border-radius: 16px;
+                white-space: nowrap;
+                gap: 6px;
+            }
+
+            /* Security & Trust Box Mobile */
+            .security-trust-box {
+                margin-top: 28px;
+                padding: 16px;
+                border-radius: 16px;
+            }
+
+            .trust-box-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                margin-bottom: 14px;
+                padding-bottom: 12px;
+            }
+
+            .trust-shield-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.4rem;
+                border-radius: 10px;
+            }
+
+            .trust-box-header h3 {
+                font-size: 1.05rem;
+                line-height: 1.35;
+            }
+
+            .trust-box-header p {
+                font-size: 0.82rem;
+                line-height: 1.4;
+            }
+
+            .trust-verified-pill {
+                margin-left: 0;
+                margin-top: 4px;
+                font-size: 0.72rem;
+                padding: 4px 10px;
+            }
+
+            .trust-cards-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .trust-mini-card {
+                padding: 12px;
+                gap: 10px;
+                border-radius: 12px;
+            }
+
+            .trust-step-badge {
+                width: 24px;
+                height: 24px;
+                font-size: 0.75rem;
+            }
+
+            .trust-mini-card h4 {
+                font-size: 0.88rem;
+                margin-bottom: 3px;
+            }
+
+            .trust-mini-card p {
+                font-size: 0.8rem;
+                line-height: 1.4;
+            }
+
+            /* Real Screenshots Mobile */
+            section.real-screenshots {
+                padding: 45px 0;
+            }
+
+            .section-header {
+                margin-bottom: 26px;
+            }
+
+            .section-tag {
+                font-size: 0.75rem;
+                letter-spacing: 1px;
+            }
+
+            .section-title {
+                font-size: 1.7rem;
+                letter-spacing: -0.5px;
+            }
+
+            .section-desc {
+                font-size: 0.88rem;
+                padding: 0 8px;
+            }
+
+            .screenshots-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .ss-card {
+                border-radius: 16px;
+            }
+
+            .ss-header {
+                padding: 10px 14px;
+            }
+
+            .ss-title {
+                font-size: 0.82rem;
+            }
+
+            .window-title {
+                font-size: 0.7rem;
+                max-width: 170px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .ss-badge {
+                font-size: 0.68rem;
+                padding: 2px 7px;
+            }
+
+            .ss-img-wrap {
+                padding: 10px;
+            }
+
+            .ss-caption {
+                padding: 12px 14px;
+                font-size: 0.82rem;
+                line-height: 1.45;
+            }
+
+            /* 5-Step Setup Guide Mobile */
+            section.how-it-works {
+                padding: 50px 0;
+            }
+
+            .steps-container {
+                gap: 14px;
+            }
+
+            .step-row {
+                display: flex;
+                flex-direction: row;
+                align-items: flex-start;
+                gap: 14px;
+                padding: 16px 14px;
+                border-radius: 16px;
+            }
+
+            .step-num-circle {
+                width: 40px;
+                height: 40px;
+                font-size: 1.15rem;
+                flex-shrink: 0;
+            }
+
+            .step-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .step-info h3 {
+                font-size: 1rem;
+                margin-bottom: 4px;
+            }
+
+            .step-info p {
+                font-size: 0.84rem;
+                line-height: 1.5;
+            }
+
+            .btn-step-dl {
+                width: 100%;
+                justify-content: center;
+                font-size: 0.84rem;
+                padding: 10px 14px;
+            }
+
+            /* Features Grid Mobile */
+            section.features {
+                padding: 50px 0;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .feature-card {
+                padding: 20px 18px;
+                border-radius: 16px;
+            }
+
+            .feature-icon-box {
+                font-size: 1.5rem;
+                margin-bottom: 8px;
+            }
+
+            .feature-heading {
+                font-size: 1.05rem;
+                margin-bottom: 6px;
+            }
+
+            .feature-text {
+                font-size: 0.86rem;
+                line-height: 1.5;
+            }
+
+            /* Games Grid Mobile */
+            section.games {
+                padding: 45px 0;
+            }
+
+            .games-pill-row {
+                gap: 8px;
+                margin-top: 18px;
+            }
+
+            .game-pill {
+                padding: 8px 14px;
+                font-size: 0.8rem;
+                border-radius: 20px;
+            }
+
+            .pill-badge {
+                font-size: 0.62rem;
+                padding: 2px 5px;
+                margin-left: 4px;
+            }
+
+            /* FAQ Accordion Mobile */
+            section.faq {
+                padding: 50px 0;
+            }
+
+            .faq-accordion {
+                gap: 12px;
+            }
+
+            .faq-item {
+                border-radius: 14px;
+            }
+
+            .faq-question {
+                padding: 16px 18px;
+                font-size: 0.95rem;
+                line-height: 1.4;
+                gap: 12px;
+            }
+
+            .faq-answer {
+                padding: 0 18px 16px 18px;
+                font-size: 0.85rem;
+                line-height: 1.55;
+            }
+
+            /* Final Download Banner Mobile */
+            section.download-banner {
+                padding: 40px 0 50px 0;
+            }
+
+            .banner-card {
+                padding: 36px 18px;
+                border-radius: 20px;
+            }
+
+            .banner-card h2 {
+                font-size: 1.55rem;
+                line-height: 1.25;
+            }
+
+            .banner-card p {
+                font-size: 0.9rem;
+                margin-bottom: 24px;
+            }
+
+            /* Toast HUD Mobile */
             .dl-toast {
-                top: 16px;
+                top: 12px;
                 bottom: auto;
-                right: 16px;
-                left: 16px;
-                width: calc(100% - 32px);
+                right: 12px;
+                left: 12px;
+                width: calc(100% - 24px);
+                padding: 14px 16px;
+                border-radius: 16px;
+                gap: 12px;
                 transform: translateY(-160px);
             }
+
             .dl-toast.show {
                 transform: translateY(0);
+            }
+
+            .dl-toast-title {
+                font-size: 0.9rem;
+            }
+
+            .dl-toast-body {
+                font-size: 0.82rem;
+            }
+
+            /* Footer Mobile */
+            footer {
+                padding: 30px 0;
+                font-size: 0.82rem;
+            }
+        }
+
+        /* Ultra-compact screens (e.g. 360px phones) */
+        @media (max-width: 380px) {
+            .container {
+                padding: 0 12px;
+            }
+
+            h1.hero-title {
+                font-size: 1.55rem;
+            }
+
+            .specs-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .spec-item {
+                font-size: 0.72rem;
+                padding: 6px 10px;
+            }
+
+            .step-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .btn-mobile-header {
+                padding: 6px 10px;
+                font-size: 0.74rem;
             }
         }
     </style>
@@ -1285,6 +1735,9 @@
                 <li><a href="#faq">FAQ</a></li>
                 <li><a href="/DuoPad_Setup.exe" class="btn-nav btn-dl-interactive" download="DuoPad_Setup.exe" onclick="handleDownload(this, event, 'exe')">💻 Download Windows Setup</a></li>
             </ul>
+            <a href="/DuoPad_Setup.exe" class="btn-mobile-header btn-dl-interactive" download="DuoPad_Setup.exe" onclick="handleDownload(this, event, 'exe')">
+                <span>⚡ Get .exe</span>
+            </a>
         </div>
     </header>
 
@@ -1297,7 +1750,7 @@
             </div>
 
             <h1 class="hero-title">
-                Play Any PC Game Using Your <br>
+                Play Any PC Game Using Your <br class="desktop-br">
                 <span class="glow-cyan">Smartphone as an Xbox Gamepad</span>
             </h1>
 
