@@ -1,0 +1,4 @@
+aiohttp>=3.10.0
+python-socketio>=5.12.0
+vgamepad>=0.1.0
+qrcode>=8.0

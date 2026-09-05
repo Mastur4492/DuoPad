@@ -1,0 +1,20 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Vercel & Surge caches
+.vercel/
+.surge/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Temporary / OS
+*.tmp
+*.log
+Thumbs.db
+.DS_Store

@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#03070d">
+    <meta name="apple-mobile-web-app-title" content="DuoPad">
+    <title>DuoPad - Smartphone Gamepad</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+    <link rel="shortcut icon" href="/static/icon-192.png">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/static/icon-512.png">
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <style>
+        /* ==========================================================================
+           DuoPad - Mobile Virtual Xbox 360 Controller (Esports Performance Theme)
+           ========================================================================== */
+        :root {
+            --border-cyan: rgba(0, 195, 255, 0.45);
+            --border-cyan-bright: #00e5ff;
+            --btn-bg: rgba(9, 23, 38, 0.78);
+            --btn-active-bg: rgba(0, 229, 255, 0.28);
+            --btn-active-glow: 0 0 18px rgba(0, 229, 255, 0.85);
+            --knob-color: #00e5ff;
+            --knob-glow: 0 0 22px rgba(0, 229, 255, 0.95);
+            --text-color: #d6e8f8;
+            --status-color: #10b981;
+        }
+
+        /* Player 2 Radiant Magenta / Purple Theme */
+        body.theme-p2 {
+            --border-cyan: rgba(244, 63, 94, 0.45);
+            --border-cyan-bright: #f43f5e;
+            --btn-bg: rgba(35, 10, 30, 0.78);
+            --btn-active-bg: rgba(244, 63, 94, 0.28);
+            --btn-active-glow: 0 0 18px rgba(244, 63, 94, 0.85);
+            --knob-color: #f43f5e;
+            --knob-glow: 0 0 22px rgba(244, 63, 94, 0.95);
+            --text-color: #fce7f3;
+            --status-color: #f43f5e;
+            background: radial-gradient(circle at 65% 35%, #2a0b25 0%, #150616 60%, #08020a 100%) !important;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            touch-action: none;
+            background: radial-gradient(circle at 65% 35%, #0d2238 0%, #06111e 60%, #02070e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: var(--text-color);
+            transition: background 0.4s ease;
+        }
+
+        /* Orientation Warning Overlay (Forces Landscape) */
+        .orientation-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #081729 0%, #03070f 85%);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+        }
+
+        @media (orientation: portrait) {
+            .orientation-modal { display: flex; }
+        }
+
+        .orientation-card {
+            background: rgba(9, 23, 38, 0.88);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            padding: 32px 26px;
+            border-radius: 26px;
+            border: 1.5px solid rgba(0, 229, 255, 0.45);
+            max-width: 320px;
+            width: 88%;
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.22), 0 20px 50px rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 3D Animated Phone Graphic */
+        .phone-anim-stage {
+            position: relative;
+            width: 124px;
+            height: 124px;
+            margin: 0 auto 16px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.12) 0%, transparent 68%);
+        }
+
+        .rotation-arc-svg {
+            position: absolute;
+            width: 114px;
+            height: 114px;
+            animation: arc-pulse 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            pointer-events: none;
+        }
+
+        .device-phone {
+            width: 44px;
+            height: 80px;
+            border: 2px solid #00e5ff;
+            border-radius: 10px;
+            background: #06111f;
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.5), inset 0 0 10px rgba(0, 229, 255, 0.2);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: phone-tilt 2.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+            transform-origin: center center;
+        }
+
+        .phone-notch {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 3px;
+            background: rgba(0, 229, 255, 0.6);
+            border-radius: 2px;
+        }
+
+        .phone-screen-inner {
+            width: 36px;
+            height: 66px;
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(3, 8, 16, 0.95) 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 3px;
+            border: 1px solid rgba(0, 229, 255, 0.25);
+        }
+
+        .screen-dpad-mini {
+            width: 10px;
+            height: 10px;
+            border: 1.5px solid #00e5ff;
+            border-radius: 50%;
+            opacity: 0.85;
+        }
+
+        .screen-buttons-mini {
+            width: 10px;
+            height: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5px;
+            opacity: 0.85;
+        }
+
+        .screen-btn-dot {
+            width: 3.5px;
+            height: 3.5px;
+            background: #00e5ff;
+            border-radius: 50%;
+        }
+
+        @keyframes phone-tilt {
+            0%, 15% { transform: rotate(0deg) scale(1); }
+            45%, 72% { transform: rotate(90deg) scale(1.08); }
+            92%, 100% { transform: rotate(0deg) scale(1); }
+        }
+
+        @keyframes arc-pulse {
+            0%, 15% { opacity: 0.3; transform: scale(0.95) rotate(0deg); }
+            45%, 72% { opacity: 1; transform: scale(1.04) rotate(45deg); }
+            92%, 100% { opacity: 0.3; transform: scale(0.95) rotate(0deg); }
+        }
+
+        .orientation-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            background: rgba(0, 229, 255, 0.12);
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            border-radius: 20px;
+            color: #00e5ff;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .orientation-badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #00e5ff;
+            box-shadow: 0 0 6px #00e5ff;
+            animation: pulse-dot 1.4s infinite alternate;
+        }
+
+        @keyframes pulse-dot {
+            0% { opacity: 0.4; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .orientation-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.3px;
+            margin-bottom: 8px;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+        }
+
+        .orientation-desc {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            line-height: 1.45;
+            margin-bottom: 14px;
+        }
+
+        .orientation-desc strong {
+            color: #00e5ff;
+            font-weight: 600;
+        }
+
+        .orientation-tip {
+            font-size: 0.72rem;
+            color: #64748b;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 6px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Status Overlay */
+        .status-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(3, 8, 14, 0.94);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .status-overlay:not(.active) {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .status-card {
+            background: rgba(9, 24, 40, 0.92);
+            border: 1.5px solid var(--border-cyan);
+            border-radius: 20px;
+            padding: 30px 40px;
+            text-align: center;
+            max-width: 420px;
+            box-shadow: 0 10px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 229, 255, 0.3);
+        }
+
+        .spinner {
+            width: 42px;
+            height: 42px;
+            border: 3.5px solid rgba(255, 255, 255, 0.1);
+            border-top: 3.5px solid var(--border-cyan-bright);
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .player-banner {
+            display: inline-block;
+            padding: 6px 20px;
+            background: var(--border-cyan-bright);
+            color: #030810;
+            font-weight: 800;
+            font-size: 1.05rem;
+            border-radius: 30px;
+            letter-spacing: 1.2px;
+            box-shadow: 0 0 18px var(--border-cyan-bright);
+            margin-top: 14px;
+        }
+
+        .btn-overlay {
+            padding: 10px 24px;
+            background: #0284c7;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 14px;
+            transition: background 0.2s;
+        }
+        .btn-overlay:active { background: #0369a1; }
+
+        .hidden { display: none !important; }
+
+        /* Sleek Discreet HUD */
+        .discreet-hud {
+            position: absolute;
+            top: 43%;
+            left: 45.3%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            z-index: 50;
+            opacity: 0.88;
+            background: rgba(4, 11, 20, 0.65);
+            backdrop-filter: blur(8px);
+            padding: 4px 10px;
+            border-radius: 16px;
+            border: 1px solid rgba(0, 195, 255, 0.25);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .hud-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-cyan);
+            padding: 2px 9px;
+            border-radius: 12px;
+            font-size: 0.74rem;
+            font-weight: 800;
+            color: var(--border-cyan-bright);
+            letter-spacing: 0.5px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--status-color);
+            box-shadow: 0 0 8px var(--status-color);
+            animation: pulse-dot 1.5s infinite alternate;
+        }
+
+        .hud-ping {
+            font-size: 0.70rem;
+            color: #94a3b8;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 2px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 195, 255, 0.2);
+            font-weight: 600;
+        }
+
+        .hud-btn-install {
+            background: rgba(0, 229, 255, 0.18);
+            border: 1px solid var(--border-cyan-bright);
+            color: var(--border-cyan-bright);
+            border-radius: 8px;
+            padding: 2px 9px;
+            font-size: 0.70rem;
+            font-weight: 700;
+            cursor: pointer;
+            align-items: center;
+            display: none;
+        }
+
+        .hud-btn-fs {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-cyan);
+            color: #cbd5e1;
+            border-radius: 8px;
+            width: 26px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+
+        .hud-btn-fs:active {
+            color: #ffffff;
+            border-color: var(--border-cyan-bright);
+            background: rgba(0, 229, 255, 0.2);
+        }
+
+        /* Gamepad Stage */
+        .gamepad-stage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 1. Top Row: LT | LB | GUIDE | RB | RT */
+        .top-row {
+            position: absolute;
+            top: 6.5%;
+            left: 0;
+            width: 100vw;
+            transform: translateY(-50%);
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            justify-items: center;
+            align-items: center;
+            z-index: 10;
+            padding: 0 1vw;
+        }
+
+        /* Pill Buttons */
+        .pill-btn {
+            width: min(156px, 15.3vw);
+            height: min(45px, 9.8vh);
+            border: 1.5px solid var(--border-cyan);
+            background: var(--btn-bg);
+            color: var(--text-color);
+            border-radius: 9999px;
+            font-size: clamp(0.78rem, 1.9vw, 0.95rem);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            transition: background 0.05s, border-color 0.05s, transform 0.05s, box-shadow 0.05s;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+
+        .pill-btn.active, .pill-btn:active {
+            background: var(--btn-active-bg);
+            border-color: var(--border-cyan-bright);
+            color: #ffffff;
+            box-shadow: var(--btn-active-glow);
+            transform: scale(0.95);
+        }
+
+        .trigger-btn {
+            border-width: 1.8px;
+            background: linear-gradient(180deg, rgba(14, 34, 58, 0.85) 0%, rgba(6, 17, 30, 0.9) 100%);
+        }
+
+        .btn-sub {
+            position: absolute;
+            top: 3px;
+            font-size: 0.55rem;
+            color: var(--border-cyan-bright);
+            letter-spacing: 0.8px;
+            opacity: 0.75;
+            text-transform: uppercase;
+        }
+
+        .guide-btn {
+            border-color: var(--border-cyan-bright);
+            font-weight: 800;
+            letter-spacing: 1px;
+            background: linear-gradient(180deg, rgba(0, 229, 255, 0.15) 0%, rgba(9, 23, 38, 0.85) 100%);
+            box-shadow: 0 0 14px rgba(0, 229, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        /* 2. Left Analog Stick */
+        .pos-left-stick {
+            position: absolute;
+            left: 13.0%;
+            top: 47.0%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            z-index: 5;
+        }
+
+        .stick-ring {
+            width: 134px;
+            height: 134px;
+            border-radius: 50%;
+            border: 2px solid var(--border-cyan);
+            background: radial-gradient(circle, #0e2238 0%, #06111e 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 18px rgba(0, 210, 255, 0.25), inset 0 0 18px rgba(0, 0, 0, 0.9);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        /* Concentric inner texture */
+        .stick-ring::before {
+            content: '';
+            position: absolute;
+            width: 65%;
+            height: 65%;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 229, 255, 0.22);
+            pointer-events: none;
+        }
+
+        .stick-ring.active-stick {
+            border-color: var(--border-cyan-bright);
+            box-shadow: 0 0 28px rgba(0, 229, 255, 0.7), inset 0 0 18px rgba(0, 0, 0, 0.9);
+        }
+
+        .stick-knob {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #ffffff 0%, var(--knob-color) 45%, #051a2e 100%);
+            position: absolute;
+            box-shadow: var(--knob-glow), inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -2px 6px rgba(0, 0, 0, 0.85);
+            pointer-events: none;
+            transform: translate3d(0px, 0px, 0);
+            will-change: transform;
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* 3. Capsule D-Pad */
+        .pos-dpad {
+            position: absolute;
+            left: 27.4%;
+            top: 77.7%;
+            transform: translate(-50%, -50%);
+            width: min(280px, 27.5vw);
+            height: min(182px, 39.5vh);
+            z-index: 5;
+            touch-action: none;
+            pointer-events: none;
+        }
+
+        .dpad-capsule {
+            border: 1.5px solid var(--border-cyan);
+            background: var(--btn-bg);
+            touch-action: none;
+            position: absolute;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.05s, border-color 0.05s, box-shadow 0.05s;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .dpad-arrow {
+            font-size: 0.75rem;
+            color: rgba(214, 232, 248, 0.7);
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        .dpad-capsule.active, .dpad-capsule:active {
+            background: var(--btn-active-bg);
+            border-color: var(--border-cyan-bright);
+            box-shadow: var(--btn-active-glow);
+        }
+        .dpad-capsule.active .dpad-arrow, .dpad-capsule:active .dpad-arrow {
+            color: #ffffff;
+            filter: drop-shadow(0 0 6px var(--border-cyan-bright));
+        }
+
+        .dpad-up {
+            bottom: calc(50% + 14px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 34px;
+            height: min(76px, 16.5vh);
+            border-radius: 17px;
+        }
+
+        .dpad-down {
+            top: calc(50% + 14px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 34px;
+            height: min(76px, 16.5vh);
+            border-radius: 17px;
+        }
+
+        .dpad-left {
+            right: calc(50% + 24px);
+            top: 50%;
+            transform: translateY(-50%);
+            width: min(116px, 11.3vw);
+            height: 26px;
+            border-radius: 13px;
+        }
+
+        .dpad-right {
+            left: calc(50% + 24px);
+            top: 50%;
+            transform: translateY(-50%);
+            width: min(116px, 11.3vw);
+            height: 26px;
+            border-radius: 13px;
+        }
+
+        /* 4. Center 2x2 Grid (Back, Start, LS, RS) */
+        .pos-center-grid {
+            position: absolute;
+            left: 45.3%;
+            top: 30.5%;
+            transform: translate(-50%, -50%);
+            width: min(300px, 29.5vw);
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 11px min(26px, 2.6vw);
+            z-index: 5;
+        }
+
+        .pill-sm {
+            width: 100%;
+            height: min(45px, 9.8vh);
+            font-size: clamp(0.72rem, 1.7vw, 0.85rem);
+            font-weight: 600;
+            letter-spacing: 0.6px;
+        }
+
+        /* 5. Right Analog Stick */
+        .pos-right-stick {
+            position: absolute;
+            left: 54.4%;
+            top: 78.8%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            z-index: 5;
+        }
+
+        /* 6. Action Diamond with Signature Glowing Xbox Colors */
+        .pos-action-diamond {
+            position: absolute;
+            left: 78.2%;
+            top: 49.6%;
+            transform: translate(-50%, -50%);
+            width: min(350px, 34.5vw);
+            height: min(270px, 58.5vh);
+            z-index: 5;
+            touch-action: none;
+            pointer-events: none;
+        }
+
+        .squircle-btn {
+            width: min(116px, 11.5vw);
+            height: min(82px, 17.8vh);
+            border-radius: 22px;
+            background: var(--btn-bg);
+            font-size: clamp(1.2rem, 2.6vw, 1.55rem);
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            touch-action: none;
+            pointer-events: auto;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 3px 10px rgba(0, 0, 0, 0.5);
+            transition: background 0.05s, border-color 0.05s, transform 0.05s, box-shadow 0.05s;
+        }
+
+        /* Y - Neon Yellow */
+        .btn-y {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1.8px solid rgba(250, 204, 21, 0.55);
+            color: #fef08a;
+            text-shadow: 0 0 10px rgba(250, 204, 21, 0.7);
+        }
+        .btn-y.active, .btn-y:active {
+            transform: translateX(-50%) scale(0.94);
+            background: rgba(250, 204, 21, 0.32);
+            border-color: #facc15;
+            box-shadow: 0 0 24px rgba(250, 204, 21, 0.9);
+            color: #ffffff;
+        }
+
+        /* X - Electric Sky Blue */
+        .btn-x {
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 1.8px solid rgba(56, 189, 248, 0.55);
+            color: #bae6fd;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+        }
+        .btn-x.active, .btn-x:active {
+            transform: translateY(-50%) scale(0.94);
+            background: rgba(14, 165, 233, 0.32);
+            border-color: #38bdf8;
+            box-shadow: 0 0 24px rgba(56, 189, 248, 0.9);
+            color: #ffffff;
+        }
+
+        /* B - Crimson Coral Red */
+        .btn-b {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 1.8px solid rgba(248, 113, 113, 0.55);
+            color: #fecaca;
+            text-shadow: 0 0 10px rgba(248, 113, 113, 0.7);
+        }
+        .btn-b.active, .btn-b:active {
+            transform: translateY(-50%) scale(0.94);
+            background: rgba(239, 68, 68, 0.32);
+            border-color: #f87171;
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.9);
+            color: #ffffff;
+        }
+
+        /* A - Vibrant Emerald Green */
+        .btn-a {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1.8px solid rgba(74, 222, 128, 0.55);
+            color: #bbf7d0;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.7);
+        }
+        .btn-a.active, .btn-a:active {
+            transform: translateX(-50%) scale(0.94);
+            background: rgba(34, 197, 94, 0.32);
+            border-color: #4ade80;
+            box-shadow: 0 0 24px rgba(34, 197, 94, 0.9);
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Orientation Warning Overlay (Forces Landscape) -->
+    <div id="orientation-warning" class="orientation-modal">
+        <div class="orientation-card">
+            <!-- 3D Glowing Rotating Phone Graphic -->
+            <div class="phone-anim-stage">
+                <svg class="rotation-arc-svg" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(0, 229, 255, 0.15)" stroke-width="2" stroke-dasharray="4 4" />
+                    <path d="M 50 6 A 44 44 0 0 1 94 50" fill="none" stroke="#00e5ff" stroke-width="2.8" stroke-linecap="round" />
+                    <polygon points="94,42 100,53 88,51" fill="#00e5ff" />
+                </svg>
+                <div class="device-phone">
+                    <div class="phone-notch"></div>
+                    <div class="phone-screen-inner">
+                        <div class="screen-dpad-mini"></div>
+                        <div class="screen-buttons-mini">
+                            <div class="screen-btn-dot"></div>
+                            <div class="screen-btn-dot"></div>
+                            <div class="screen-btn-dot"></div>
+                            <div class="screen-btn-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="orientation-badge">
+                <span class="orientation-badge-dot"></span>
+                <span>Landscape Required</span>
+            </div>
+            <h2 class="orientation-title">Rotate Your Phone</h2>
+            <p class="orientation-desc">Turn your phone to <strong>Landscape mode</strong> for the dual-analog Xbox gamepad.</p>
+            <div class="orientation-tip">💡 Tip: Turn on "Auto-Rotate" in quick settings</div>
+        </div>
+    </div>
+
+    <!-- Status / Reconnection Overlay -->
+    <div id="status-overlay" class="status-overlay active">
+        <div class="status-card">
+            <div class="spinner" id="status-spinner"></div>
+            <h2 id="status-title">Connecting to PC...</h2>
+            <p id="status-message">Ensure phone and PC are on the same Wi-Fi or Hotspot.</p>
+            <div id="player-banner" class="player-banner hidden">
+                <span id="player-badge">PLAYER 1</span>
+            </div>
+            <button id="btn-reconnect" class="btn-overlay hidden">Retry Connection</button>
+        </div>
+    </div>
+
+    <!-- Sleek Discreet HUD -->
+    <div class="discreet-hud">
+        <div class="hud-pill" id="hud-player-pill">
+            <span class="status-dot"></span>
+            <span id="hud-player-text">P1</span>
+        </div>
+        <span class="hud-ping" id="hud-ping">-- ms</span>
+        <button id="btn-install-app" class="hud-btn-install" style="display:none;" title="Add to Phone Home Screen">📲 Add to Home</button>
+        <button id="btn-fullscreen" class="hud-btn-fs" title="Toggle Fullscreen">⛶</button>
+    </div>
+
+    <!-- Main Gamepad Stage -->
+    <div class="gamepad-stage">
+
+        <!-- Top Shoulders Row: LT | LB | GUIDE | RB | RT -->
+        <header class="top-row">
+            <button class="pill-btn trigger-btn" id="btn-LT" data-trigger="LT"><span class="btn-sub">TRIG</span>LT</button>
+            <button class="pill-btn" id="btn-LB" data-btn="LB">LB</button>
+            <button class="pill-btn guide-btn" id="btn-GUIDE" data-btn="Guid">GUIDE</button>
+            <button class="pill-btn" id="btn-RB" data-btn="RB">RB</button>
+            <button class="pill-btn trigger-btn" id="btn-RT" data-trigger="RT"><span class="btn-sub">TRIG</span>RT</button>
+        </header>
+
+        <!-- Left Analog Stick (Upper Left) -->
+        <div class="pos-left-stick" id="left-stick-zone">
+            <div class="stick-ring">
+                <div class="stick-knob" id="left-stick-knob"></div>
+            </div>
+        </div>
+
+        <!-- Capsule D-Pad (Lower Left) -->
+        <div class="pos-dpad">
+            <button class="dpad-capsule dpad-up" id="btn-DPAD_UP" data-btn="DPAD_UP" aria-label="Up">
+                <span class="dpad-arrow">▲</span>
+            </button>
+            <button class="dpad-capsule dpad-left" id="btn-DPAD_LEFT" data-btn="DPAD_LEFT" aria-label="Left">
+                <span class="dpad-arrow">◀</span>
+            </button>
+            <button class="dpad-capsule dpad-right" id="btn-DPAD_RIGHT" data-btn="DPAD_RIGHT" aria-label="Right">
+                <span class="dpad-arrow">▶</span>
+            </button>
+            <button class="dpad-capsule dpad-down" id="btn-DPAD_DOWN" data-btn="DPAD_DOWN" aria-label="Down">
+                <span class="dpad-arrow">▼</span>
+            </button>
+        </div>
+
+        <!-- Center 2x2 Grid (Back, Start, LS, RS) -->
+        <div class="pos-center-grid">
+            <button class="pill-btn pill-sm" id="btn-BACK" data-btn="Back">BACK</button>
+            <button class="pill-btn pill-sm" id="btn-START" data-btn="Start">START</button>
+            <button class="pill-btn pill-sm" id="btn-LS" data-btn="LS">LS (L3)</button>
+            <button class="pill-btn pill-sm" id="btn-RS" data-btn="RS">RS (R3)</button>
+        </div>
+
+        <!-- Right Analog Stick (Lower Middle) -->
+        <div class="pos-right-stick" id="right-stick-zone">
+            <div class="stick-ring">
+                <div class="stick-knob" id="right-stick-knob"></div>
+            </div>
+        </div>
+
+        <!-- Action Diamond with Authentic Xbox Colors (Y, X, B, A) -->
+        <div class="pos-action-diamond">
+            <button class="squircle-btn btn-y" id="btn-Y" data-btn="Y">Y</button>
+            <button class="squircle-btn btn-x" id="btn-X" data-btn="X">X</button>
+            <button class="squircle-btn btn-b" id="btn-B" data-btn="B">B</button>
+            <button class="squircle-btn btn-a" id="btn-A" data-btn="A">A</button>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/socket.io.min.js"></script>
+    <script src="/static/controller.js?v=9"></script>
+    <script>
+        // PWA Service Worker & Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('btn-install-app');
+            if (btn) btn.style.display = 'inline-flex';
+        });
+
+        const btnInstall = document.getElementById('btn-install-app');
+        if (btnInstall) {
+            btnInstall.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        btnInstall.style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                }
+            });
+        }
+
+        // Auto-enter fullscreen on first tap
+        function enterFullscreen() {
+            const el = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (el.requestFullscreen) {
+                    el.requestFullscreen().catch(() => {});
+                } else if (el.webkitRequestFullscreen) {
+                    el.webkitRequestFullscreen();
+                }
+            }
+        }
+        window.addEventListener('touchstart', enterFullscreen, { passive: true });
+        window.addEventListener('click', enterFullscreen, { passive: true });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>

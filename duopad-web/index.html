@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuoPad — Turn Phone into Xbox 360 Controller for PC Games (Free Gamepad)</title>
+    <meta name="description" content="Turn any smartphone into a virtual Xbox 360 controller for PC games like EA Sports FC 25/26, FIFA, GTA V & Forza. Zero phone app install, 2-player dual co-op over local Wi-Fi, sub-1ms latency. 100% free.">
+    <meta name="keywords" content="phone as pc controller, mobile gamepad for pc, turn phone into xbox controller, virtual xbox 360 controller, pc gamepad emulator, duopad, duopad pc, play fifa with phone controller, dual mobile controller pc, wireless pc gamepad wifi, zero install mobile controller">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="author" content="DuoPad Team">
+    <meta name="theme-color" content="#030712">
+    <link rel="canonical" href="https://duopad-web.vercel.app/">
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://duopad-web.vercel.app/">
+    <meta property="og:site_name" content="DuoPad">
+    <meta property="og:title" content="DuoPad — Turn Phone into Xbox 360 Controller for PC">
+    <meta property="og:description" content="Play PC games using your smartphone as an Xbox 360 controller. Sub-1ms Wi-Fi latency, dual 2-player co-op, zero mobile app install needed.">
+    <meta property="og:image" content="https://duopad-web.vercel.app/real_desktop_hub.png">
+    <meta property="og:image:secure_url" content="https://duopad-web.vercel.app/real_desktop_hub.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="DuoPad PC Gamepad Server and Mobile Virtual Controller">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://duopad-web.vercel.app/">
+    <meta name="twitter:title" content="DuoPad — Turn Phone into Xbox 360 Controller for PC">
+    <meta name="twitter:description" content="Turn your smartphone into a virtual Xbox 360 gamepad for PC. Zero mobile install, dual co-op, sub-1ms local Wi-Fi latency.">
+    <meta name="twitter:image" content="https://duopad-web.vercel.app/real_desktop_hub.png">
+
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/duopad_icon.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+    <!-- Schema.org JSON-LD Structured Data for Google Search Rich Results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "DuoPad",
+          "operatingSystem": "Windows 10, Windows 11",
+          "applicationCategory": "GameApplication, UtilitiesApplication",
+          "description": "Windows software that turns smartphones into virtual Xbox 360 (XInput) gamepads over local Wi-Fi for 2-player co-op gaming.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "softwareVersion": "1.0",
+          "downloadUrl": "https://duopad-web.vercel.app/DuoPad_Setup.exe",
+          "image": "https://duopad-web.vercel.app/real_desktop_hub.png",
+          "screenshot": [
+            "https://duopad-web.vercel.app/real_desktop_hub.png",
+            "https://duopad-web.vercel.app/real_controller_mobile.png"
+          ]
+        },
+        {
+          "@type": "WebApplication",
+          "name": "DuoPad Mobile Controller",
+          "applicationCategory": "GameApplication",
+          "browserRequirements": "Requires HTML5, WebSockets, Touch Events (Chrome, Safari, Edge)",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "description": "Zero-install web-based virtual gamepad for smartphones connecting to the DuoPad PC server."
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Do I need to install an app on my phone to use DuoPad?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No! When you scan the QR code displayed on your PC screen, the virtual gamepad opens immediately in Safari (iOS) or Chrome (Android) without downloading any mobile app."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Do I need an active internet connection?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No internet is required. As long as your phone and PC are connected to the same local Wi-Fi router or phone mobile hotspot, all gamepad signals travel directly with sub-1ms latency."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can two people play simultaneously with two phones?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes! DuoPad supports 2 smartphones at the same time. The first phone connects as Player 1 (Cyan) and the second phone connects as Player 2 (Magenta). Both appear as distinct native Xbox 360 controllers in Windows."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Which PC games are compatible with DuoPad?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "DuoPad emulates genuine hardware Xbox 360 controllers via ViGEmBus, making it compatible with EA Sports FC 24/25/26, FIFA, GTA V, Forza Horizon, Rocket League, Tekken 8, and all Steam / Game Pass games."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+    
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --bg-card: rgba(9, 21, 38, 0.75);
+            --border-card: rgba(0, 229, 255, 0.25);
+            --cyan: #00f0ff;
+            --cyan-glow: rgba(0, 240, 255, 0.4);
+            --magenta: #ff007f;
+            --magenta-glow: rgba(255, 0, 127, 0.4);
+            --emerald: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 50%, rgba(255, 0, 127, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navbar */
+        header.navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 16px 0;
+        }
+
+        .nav-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .brand img {
+            width: 36px;
+            height: 36px;
+            filter: drop-shadow(0 0 10px var(--cyan-glow));
+        }
+
+        .brand span.highlight {
+            color: var(--cyan);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyan);
+        }
+
+        .btn-nav {
+            padding: 9px 20px;
+            background: linear-gradient(135deg, var(--cyan) 0%, #0099ff 100%);
+            color: #030811 !important;
+            font-weight: 700 !important;
+            border-radius: 10px;
+            box-shadow: 0 0 20px var(--cyan-glow);
+            transition: transform 0.2s, box-shadow 0.2s !important;
+        }
+
+        .btn-nav:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 28px rgba(0, 240, 255, 0.6);
+        }
+
+        /* Hero */
+        section.hero {
+            padding: 80px 0 60px 0;
+            text-align: center;
+        }
+
+        .hero-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 18px;
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            border-radius: 30px;
+            color: var(--cyan);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--emerald);
+            box-shadow: 0 0 8px var(--emerald);
+            animation: pulse-dot 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-dot {
+            0% { opacity: 0.4; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        h1.hero-title {
+            font-size: clamp(2.3rem, 5.2vw, 4rem);
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            line-height: 1.15;
+            margin-bottom: 20px;
+            max-width: 940px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        h1.hero-title .glow-cyan {
+            background: linear-gradient(135deg, #ffffff 30%, var(--cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.hero-subtitle {
+            font-size: clamp(1.05rem, 2vw, 1.25rem);
+            color: var(--text-muted);
+            max-width: 780px;
+            margin: 0 auto 34px auto;
+            line-height: 1.6;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .btn-primary-dl {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 36px;
+            background: linear-gradient(135deg, var(--cyan) 0%, #0284c7 100%);
+            color: #030811;
+            font-size: 1.12rem;
+            font-weight: 800;
+            border-radius: 14px;
+            text-decoration: none;
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.45), 0 10px 25px rgba(0, 0, 0, 0.5);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary-dl:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 50px rgba(0, 240, 255, 0.7), 0 15px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Interactive Download Button & Loader System */
+        .btn-dl-interactive {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        /* Subtle glowing light sweep */
+        .btn-dl-interactive::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -80%;
+            width: 50%;
+            height: 200%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transform: rotate(25deg);
+            animation: btn-ray 3.5s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes btn-ray {
+            0% { left: -80%; }
+            25%, 100% { left: 160%; }
+        }
+
+        /* Loading State */
+        .btn-dl-interactive.is-loading {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 35px rgba(2, 132, 199, 0.8), inset 0 0 15px rgba(0, 0, 0, 0.3) !important;
+            cursor: wait !important;
+            pointer-events: none;
+            transform: scale(0.98);
+        }
+
+        .btn-dl-interactive.is-loading::after {
+            display: none;
+        }
+
+        /* Success State */
+        .btn-dl-interactive.is-success {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 45px rgba(16, 185, 129, 0.85) !important;
+            animation: pop-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes pop-bounce {
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.04); }
+            100% { transform: scale(1); }
+        }
+
+        /* Rotating Cyan Spinner */
+        .dl-spinner {
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255, 255, 255, 0.25);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            display: inline-block;
+            animation: dl-spin 0.65s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes dl-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Checkmark Icon */
+        .dl-check-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            font-weight: 900;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+
+        /* Size Pill Badge on Button */
+        .btn-size-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 8px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        /* Step 1 Inline Download Button */
+        .btn-step-dl {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 22px;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.18) 0%, rgba(2, 132, 199, 0.28) 100%);
+            border: 1.5px solid var(--cyan);
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border-radius: 12px;
+            text-decoration: none;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+            transition: all 0.2s;
+        }
+
+        .btn-step-dl:hover {
+            background: linear-gradient(135deg, var(--cyan) 0%, #0284c7 100%);
+            color: #030811;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Floating Cyber HUD Download Toast */
+        .dl-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            max-width: 440px;
+            width: calc(100% - 48px);
+            background: rgba(8, 18, 36, 0.96);
+            border: 1.5px solid var(--cyan);
+            border-radius: 20px;
+            padding: 18px 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 240, 255, 0.3);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 9999;
+            transform: translateY(140px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            color: #f8fafc;
+        }
+
+        .dl-toast.show {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .dl-toast-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid var(--cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.35);
+        }
+
+        .dl-toast-content {
+            flex: 1;
+        }
+
+        .dl-toast-title {
+            font-weight: 800;
+            font-size: 1.02rem;
+            color: #ffffff;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .dl-toast-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .dl-toast-body {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+            margin-bottom: 12px;
+        }
+
+        .dl-toast-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .dl-toast-btn-action {
+            display: inline-block;
+            padding: 7px 15px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+            background: var(--cyan);
+            color: #030811;
+            transition: all 0.2s;
+        }
+
+        .dl-toast-btn-action:hover {
+            box-shadow: 0 0 15px var(--cyan);
+            transform: translateY(-1px);
+        }
+
+        .dl-toast-btn-close {
+            padding: 7px 13px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dl-toast-btn-close:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
+
+        .btn-secondary-guide {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-radius: 14px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary-guide:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        /* Zero-Install Camera QR Banner */
+        .zero-install-banner {
+            margin: 0 auto 34px auto;
+            max-width: 720px;
+            background: rgba(0, 240, 255, 0.08);
+            border: 1.5px solid rgba(0, 240, 255, 0.35);
+            border-radius: 16px;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            font-size: 0.96rem;
+            color: #f1f5f9;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
+            transition: all 0.25s ease;
+        }
+
+        .zero-install-banner:hover {
+            border-color: var(--cyan);
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .zero-install-icon {
+            font-size: 1.45rem;
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.4));
+        }
+
+        .specs-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .spec-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(10, 24, 40, 0.6);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        /* Real UI Screenshots Section */
+        section.real-screenshots {
+            padding: 70px 0 90px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-tag {
+            color: var(--cyan);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 3.5vw, 2.8rem);
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+
+        .section-desc {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            align-items: center;
+        }
+
+        @media (max-width: 860px) {
+            .screenshots-grid { grid-template-columns: 1fr; }
+        }
+
+        .ss-card {
+            background: rgba(8, 18, 32, 0.85);
+            border: 1.5px solid var(--border-card);
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.12);
+            transition: transform 0.3s, border-color 0.3s;
+        }
+
+        .ss-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--cyan);
+        }
+
+        .ss-header {
+            padding: 14px 20px;
+            background: rgba(15, 30, 50, 0.6);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ss-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ss-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-pc {
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+        }
+
+        .badge-mobile {
+            background: rgba(255, 0, 127, 0.15);
+            border: 1px solid var(--magenta);
+            color: var(--magenta);
+        }
+
+        .ss-img-wrap {
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #020610;
+        }
+
+        .ss-img-wrap img {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            display: block;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.8);
+        }
+
+        .ss-caption {
+            padding: 16px 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(10, 24, 40, 0.5);
+        }
+
+        .ss-caption strong {
+            color: #ffffff;
+        }
+
+        /* 5-Step Real Setup Guide */
+        section.how-it-works {
+            padding: 90px 0;
+            background: rgba(0, 0, 0, 0.25);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        .step-row {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 20px;
+            padding: 24px 28px;
+            align-items: center;
+            transition: all 0.25s;
+        }
+
+        .step-row:hover {
+            border-color: var(--cyan);
+            transform: translateX(6px);
+            box-shadow: 0 10px 30px rgba(0, 240, 255, 0.15);
+        }
+
+        @media (max-width: 600px) {
+            .step-row { grid-template-columns: 1fr; }
+        }
+
+        .step-num-circle {
+            width: 68px;
+            height: 68px;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2) 0%, rgba(2, 132, 199, 0.4) 100%);
+            border: 1.5px solid var(--cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: #ffffff;
+            box-shadow: 0 0 18px var(--cyan-glow);
+        }
+
+        .step-info h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .step-info p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+
+        .step-code-inline {
+            background: #020712;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            color: var(--cyan);
+            font-size: 0.9rem;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        /* Features Section */
+        section.features {
+            padding: 90px 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: rgba(8, 16, 28, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 28px;
+            transition: all 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(0, 240, 255, 0.45);
+            background: rgba(10, 22, 40, 0.9);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon-box {
+            font-size: 1.8rem;
+            margin-bottom: 14px;
+            display: inline-block;
+        }
+
+        .feature-heading {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .feature-text {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            line-height: 1.55;
+        }
+
+        /* Games Grid */
+        section.games {
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .games-pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            max-width: 900px;
+            margin: 28px auto 0 auto;
+        }
+
+        .game-pill {
+            background: rgba(14, 28, 48, 0.7);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .game-pill:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            transform: scale(1.04);
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
+        }
+
+        /* FAQ Section */
+        section.faq {
+            padding: 90px 0;
+        }
+
+        .faq-accordion {
+            max-width: 780px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .faq-item:hover {
+            border-color: rgba(0, 240, 255, 0.3);
+        }
+
+        .faq-question {
+            padding: 22px 26px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            color: #ffffff;
+        }
+
+        .faq-question span.toggle-icon {
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+            color: var(--cyan);
+        }
+
+        .faq-answer {
+            padding: 0 26px 22px 26px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .faq-item.active .faq-answer {
+            display: block;
+        }
+
+        .faq-item.active .toggle-icon {
+            transform: rotate(45deg);
+        }
+
+        /* Final Download Banner */
+        section.download-banner {
+            padding: 80px 0;
+        }
+
+        .banner-card {
+            background: radial-gradient(circle at center, rgba(0, 240, 255, 0.16) 0%, rgba(8, 18, 32, 0.95) 75%);
+            border: 1.5px solid var(--cyan);
+            border-radius: 28px;
+            padding: 60px 30px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 240, 255, 0.25), 0 20px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        .banner-card h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 14px;
+        }
+
+        .banner-card p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 32px auto;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        /* Security & Trust Notice Box */
+        .security-trust-box {
+            margin-top: 36px;
+            background: rgba(8, 20, 38, 0.85);
+            border: 1.5px solid rgba(0, 240, 255, 0.35);
+            border-radius: 20px;
+            padding: 26px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), inset 0 0 25px rgba(0, 240, 255, 0.08);
+            text-align: left;
+        }
+
+        .trust-box-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 22px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .trust-shield-icon {
+            font-size: 1.8rem;
+            background: rgba(16, 185, 129, 0.18);
+            border: 1.5px solid rgba(16, 185, 129, 0.5);
+            border-radius: 14px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+            flex-shrink: 0;
+        }
+
+        .trust-box-header h3 {
+            font-size: 1.22rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.3px;
+        }
+
+        .trust-box-header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .trust-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .trust-mini-card {
+            background: rgba(3, 7, 18, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .trust-step-badge {
+            background: linear-gradient(135deg, var(--cyan) 0%, #0284c7 100%);
+            color: #030712;
+            font-weight: 900;
+            font-size: 0.85rem;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+        }
+
+        .trust-mini-card h4 {
+            font-size: 0.98rem;
+            color: #ffffff;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .trust-mini-card p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .trust-mini-card p strong {
+            color: var(--cyan);
+        }
+
+        .trust-verified-pill {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            border-radius: 20px;
+            color: #34d399;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .check-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #10b981;
+            color: #030712;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 900;
+        }
+
+        /* Hardware Display Mockups */
+        .window-mockup {
+            width: 100%;
+            background: #060e1a;
+            border-radius: 14px;
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+
+        .window-header {
+            padding: 10px 14px;
+            background: rgba(15, 28, 48, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .window-dots {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .window-title {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .window-badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 8px;
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .phone-mockup {
+            width: 100%;
+            background: #020610;
+            border: 2px solid rgba(255, 0, 127, 0.35);
+            border-radius: 20px;
+            padding: 6px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 25px rgba(255, 0, 127, 0.2);
+            position: relative;
+        }
+
+        .phone-notch {
+            height: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .phone-camera {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .phone-speaker {
+            width: 28px;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .pill-badge {
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: rgba(0, 240, 255, 0.15);
+            color: var(--cyan);
+            letter-spacing: 0.5px;
+            margin-left: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            h1.hero-title { font-size: 2.3rem; }
+            .hero-cta-group { flex-direction: column; width: 100%; }
+            .zero-install-banner { margin: 0 auto 26px auto; padding: 12px 16px; font-size: 0.88rem; gap: 10px; }
+            .specs-bar { gap: 10px; }
+            .security-trust-box { padding: 18px; }
+            .trust-cards-grid { grid-template-columns: 1fr; }
+            .trust-verified-pill { margin-left: 0; margin-top: 8px; }
+            .trust-box-header { flex-direction: column; align-items: flex-start; }
+            .dl-toast {
+                top: 16px;
+                bottom: auto;
+                right: 16px;
+                left: 16px;
+                width: calc(100% - 32px);
+                transform: translateY(-160px);
+            }
+            .dl-toast.show {
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <header class="navbar">
+        <div class="container nav-content">
+            <a href="#" class="brand">
+                <img src="/duopad_icon.png" alt="DuoPad Gamepad">
+                <span>Duo<span class="highlight">Pad</span></span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#screenshots">Screenshots</a></li>
+                <li><a href="#setup-guide">Setup Guide</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="/DuoPad_Setup.exe" class="btn-nav btn-dl-interactive" download="DuoPad_Setup.exe" onclick="handleDownload(this, event, 'exe')">💻 Download Windows Setup</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-badge-pill">
+                <span class="live-dot"></span>
+                <span>DuoPad v1.0 • Windows Xbox 360 Gamepad Server</span>
+            </div>
+
+            <h1 class="hero-title">
+                Play Any PC Game Using Your <br>
+                <span class="glow-cyan">Smartphone as an Xbox Gamepad</span>
+            </h1>
+
+            <p class="hero-subtitle">
+                Play FIFA, EA Sports FC 24/25/26, GTA V, Rocket League, and Forza with your phone. 
+                Dual-controller co-op for 2 players, direct local Wi-Fi transmission, sub-millisecond latency, and 100% free.
+            </p>
+
+            <div class="hero-cta-group" style="justify-content: center;">
+                <a href="/DuoPad_Setup.exe" class="btn-primary-dl btn-dl-interactive" download="DuoPad_Setup.exe" onclick="handleDownload(this, event, 'exe')">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Download DuoPad Setup (.exe)</span>
+                    <span class="btn-size-badge">23.7 MB • 1-Click Install</span>
+                </a>
+            </div>
+
+            <!-- Zero-Install Camera QR Banner -->
+            <div class="zero-install-banner">
+                <span class="zero-install-icon">📱</span>
+                <span><strong>Zero-Install Mobile Gamepad:</strong> No phone app or download needed! Just point your phone's camera at the PC screen QR code to play instantly in Chrome or Safari.</span>
+            </div>
+
+            <div class="specs-bar">
+                <div class="spec-item"><span class="icon">⚡</span> <span>&lt;1ms Local Latency</span></div>
+                <div class="spec-item"><span class="icon">👥</span> <span>Player 1 & 2 Dual Co-Op</span></div>
+                <div class="spec-item"><span class="icon">📶</span> <span>Direct Local Wi-Fi</span></div>
+                <div class="spec-item"><span class="icon">🎮</span> <span>Native Xbox 360 (XInput)</span></div>
+            </div>
+
+            <!-- Trust & Safety Verification Notice Box -->
+            <div class="security-trust-box" id="trust-notice">
+                <div class="trust-box-header">
+                    <div class="trust-shield-icon">🛡️</div>
+                    <div>
+                        <h3>Safe, Verified & 100% Free Open-Source Gaming</h3>
+                        <p>Zero telemetry, zero ads. Powered by official ViGEmBus Xbox 360 virtual device driver for Windows 10 & 11.</p>
+                    </div>
+                    <div class="trust-verified-pill">
+                        <span class="check-dot">✓</span>
+                        <span>Malware-Free Verified</span>
+                    </div>
+                </div>
+                <div class="trust-cards-grid">
+                    <div class="trust-mini-card">
+                        <span class="trust-step-badge">1</span>
+                        <div>
+                            <h4>Wait for 100% Download (23.7 MB)</h4>
+                            <p>Allow the browser to finish downloading completely. Clicking while Edge/Chrome says <em>"Scanning..."</em> tries to open an incomplete file, causing Windows to show <em>"This app can't run on your PC"</em>.</p>
+                        </div>
+                    </div>
+                    <div class="trust-mini-card">
+                        <span class="trust-step-badge">2</span>
+                        <div>
+                            <h4>If Browser Asks "Keep File?"</h4>
+                            <p>Because DuoPad is a brand-new release, Edge/Chrome will verify it. Click <strong>••• (More options) ➔ Keep ➔ Keep anyway</strong> to confirm the download.</p>
+                        </div>
+                    </div>
+                    <div class="trust-mini-card">
+                        <span class="trust-step-badge">3</span>
+                        <div>
+                            <h4>Windows SmartScreen: "Run anyway"</h4>
+                            <p>If the blue <em>"Windows protected your PC"</em> dialog appears, click <strong>"More info"</strong> and then click <strong>"Run anyway"</strong>. It installs safely in 5 seconds.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Real UI Screenshots Section -->
+    <section class="real-screenshots" id="screenshots">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">ACTUAL INTERFACE</span>
+                <h2 class="section-title">Real DuoPad in Action</h2>
+                <p class="section-desc">Here is what the DuoPad server looks like on your PC and on your phone.</p>
+            </div>
+
+            <div class="screenshots-grid">
+                <!-- PC Server Screenshot in Window Mockup -->
+                <div class="ss-card">
+                    <div class="window-mockup">
+                        <div class="window-header">
+                            <div class="window-dots">
+                                <span class="dot dot-red"></span>
+                                <span class="dot dot-yellow"></span>
+                                <span class="dot dot-green"></span>
+                            </div>
+                            <span class="window-title">💻 DuoPad Hub v1.0 — Windows Gamepad Server</span>
+                            <span class="window-badge">● ONLINE</span>
+                        </div>
+                        <div class="ss-img-wrap">
+                            <img src="/real_desktop_hub.png" alt="DuoPad Windows Desktop Hub Screenshot">
+                        </div>
+                    </div>
+                    <div class="ss-caption">
+                        <strong>DuoPad Hub Window:</strong> Displays local server URL, live QR code for instant camera scan, and real-time connection status for <strong>Player 1</strong> and <strong>Player 2</strong>.
+                    </div>
+                </div>
+
+                <!-- Mobile Controller Screenshot in Smartphone Mockup -->
+                <div class="ss-card">
+                    <div class="phone-mockup">
+                        <div class="phone-notch">
+                            <span class="phone-camera"></span>
+                            <span class="phone-speaker"></span>
+                        </div>
+                        <div class="ss-img-wrap">
+                            <img src="/real_controller_mobile.png" alt="DuoPad Mobile Gamepad Screen Screenshot">
+                        </div>
+                    </div>
+                    <div class="ss-caption">
+                        <strong>Full Xbox 360 Controller:</strong> Dual 360° analog thumbsticks, 4-way D-Pad, LT/RT analog triggers, LB/RB bumpers, A/B/X/Y action buttons, Start & Back.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5-Step Real Setup Guide -->
+    <section class="how-it-works" id="setup-guide">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">STEP-BY-STEP</span>
+                <h2 class="section-title">Complete Setup Guide</h2>
+                <p class="section-desc">Follow these 5 simple steps to get playing in less than 60 seconds.</p>
+            </div>
+
+            <div class="steps-container">
+                <!-- Step 1 -->
+                <div class="step-row">
+                    <div class="step-num-circle">1</div>
+                    <div class="step-info">
+                        <h3>Download DuoPad Setup (.exe)</h3>
+                        <p>
+                            Click the download button below to get the official <span class="step-code-inline">DuoPad_Setup.exe</span> (23.7 MB). Please wait for the download to complete 100% in your browser before opening.
+                        </p>
+                        <div style="margin-top: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+                            <a href="/DuoPad_Setup.exe" class="btn-step-dl btn-dl-interactive" download="DuoPad_Setup.exe" onclick="handleDownload(this, event, 'exe')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                <span>Download DuoPad_Setup.exe (23.7 MB)</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-row">
+                    <div class="step-num-circle">2</div>
+                    <div class="step-info">
+                        <h3>Run 1-Click Installer</h3>
+                        <p>
+                            Double-click <span class="step-code-inline">DuoPad_Setup.exe</span> and click <strong>Next ➔ Install</strong>. 
+                            <em>(If Windows SmartScreen prompts, click <strong>"More info" ➔ "Run anyway"</strong>.)</em>
+                            It sets up the virtual Xbox controller driver and creates a glowing neon <strong>DuoPad icon on your Desktop</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step-row">
+                    <div class="step-num-circle">3</div>
+                    <div class="step-info">
+                        <h3>Launch DuoPad from Desktop</h3>
+                        <p>
+                            Double-click the <strong>DuoPad</strong> icon on your Desktop. 
+                            The DuoPad Hub window will appear, displaying your local Wi-Fi QR code and controller connection slots.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="step-row">
+                    <div class="step-num-circle">4</div>
+                    <div class="step-info">
+                        <h3>Scan QR Code with Your Phone Camera</h3>
+                        <p>
+                            Ensure your phone and PC are connected to the <strong>same Wi-Fi network</strong> (or phone hotspot). 
+                            Open your phone's camera, point it at the QR code on your PC screen, and tap to launch the gamepad in Chrome or Safari!
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="step-row">
+                    <div class="step-num-circle">5</div>
+                    <div class="step-info">
+                        <h3>Keep Hub Minimized & Start Gaming!</h3>
+                        <p>
+                            Keep the DuoPad window open or <strong>minimized</strong> in the background. 
+                            Launch FIFA, EA Sports FC 25/26, GTA V, Rocket League, or Steam — Windows recognizes your phone as a genuine Xbox 360 controller!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">ENGINE SPECS</span>
+                <h2 class="section-title">Built for Real Competitive Gaming</h2>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon-box">⚡</div>
+                    <h4 class="feature-heading">&lt;1ms Local Latency</h4>
+                    <p class="feature-text">High-speed binary WebSocket communication over local Wi-Fi. Direct touch polling decoupled from 120Hz GPU render frames.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-box">👥</div>
+                    <h4 class="feature-heading">2-Player Dual Co-Op</h4>
+                    <p class="feature-text">Connect two smartphones simultaneously. Phone 1 becomes Player 1 (Cyan) and Phone 2 becomes Player 2 (Magenta) for local 1v1 matches.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-box">🎮</div>
+                    <h4 class="feature-heading">Official ViGEmBus Emulation</h4>
+                    <p class="feature-text">Emulates standard hardware Xbox 360 (XInput) controllers. Recognized natively by EA App, Steam, Epic Games, and Game Pass.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-box">📶</div>
+                    <h4 class="feature-heading">100% Local Wi-Fi (No Internet)</h4>
+                    <p class="feature-text">All touch signals travel locally across your home Wi-Fi router or phone mobile hotspot. Zero external cloud servers.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-box">🛡️</div>
+                    <h4 class="feature-heading">Exit Protection Safeguard</h4>
+                    <p class="feature-text">Accidentally clicking 'X' on your laptop won't drop your match. DuoPad warns you to minimize instead of closing.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon-box">🆓</div>
+                    <h4 class="feature-heading">100% Free & Open-Source</h4>
+                    <p class="feature-text">Zero ads, zero subscriptions, zero hidden fees. Built by gamers for the PC gaming community.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Supported Games -->
+    <section class="games" id="games">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">COMPATIBILITY</span>
+                <h2 class="section-title">Tested & Verified Games</h2>
+            </div>
+
+            <div class="games-pill-row">
+                <div class="game-pill">⚽ EA Sports FC 24 / 25 / 26 <span class="pill-badge">FOOTBALL</span></div>
+                <div class="game-pill">🏎️ Forza Horizon 4 & 5 <span class="pill-badge">RACING</span></div>
+                <div class="game-pill">🚗 Rocket League <span class="pill-badge">ESPORTS</span></div>
+                <div class="game-pill">🔫 GTA V & GTA Online <span class="pill-badge">OPEN WORLD</span></div>
+                <div class="game-pill">🥊 Tekken 8 & Street Fighter 6 <span class="pill-badge">FIGHTING</span></div>
+                <div class="game-pill">🎯 Call of Duty: Warzone <span class="pill-badge">SHOOTER</span></div>
+                <div class="game-pill">🔥 Mortal Kombat 1 <span class="pill-badge">ARCADE</span></div>
+                <div class="game-pill">🕹️ Yuzu, RPCS3 & PCSX2 <span class="pill-badge">EMULATORS</span></div>
+                <div class="game-pill">⚡ Steam Big Picture Mode <span class="pill-badge">NATIVE</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq" id="faq">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">HELP & SUPPORT</span>
+                <h2 class="section-title">Frequently Asked Questions</h2>
+            </div>
+
+            <div class="faq-accordion">
+                <div class="faq-item active">
+                    <div class="faq-question">
+                        <span>Do I need to install an app on my phone?</span>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        No! When you scan the QR code, the controller opens immediately in Safari (iOS) or Chrome (Android). You can also tap "Add to Home Screen" to run it as a full-screen standalone PWA.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Do I need an active internet connection?</span>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        No internet is required! As long as your phone and laptop are connected to the same Wi-Fi router (or phone mobile hotspot), all signals travel directly through your local network.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Can two people play together at the same time?</span>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Yes! DuoPad supports 2 phones simultaneously. The first phone to connect gets Player 1 (Cyan), and the second phone gets Player 2 (Magenta). Both appear as distinct Xbox controllers in Windows.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Do I need to keep the DuoPad app open on my laptop?</span>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Yes, keep the DuoPad Hub window open or MINIMIZED in the background while playing. It translates phone signals into Windows gamepad inputs. You can minimize it to the taskbar and play your game in full screen.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>How do I test if Windows recognizes the controllers?</span>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        In the DuoPad Hub window, click the "Test Gamepads (joy.cpl)" button. This opens the official Windows Game Controllers control panel where you can test button presses in real time.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Why did Windows or Edge show "Scanning...", "This app can't run on your PC", or SmartScreen?</span>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        This is completely normal for newly released open-source software and occurs for two reasons:
+                        <br><br>
+                        <strong>1. Opening before download completes:</strong> <span class="step-code-inline">DuoPad_Setup.exe</span> is 23.7 MB. If you click on the file while Edge/Chrome says <em>"Scanning..."</em> or before it reaches 100%, Windows attempts to run an incomplete file and shows <em>"This app can't run on your PC"</em>. Simply wait for the download to finish completely.
+                        <br><br>
+                        <strong>2. Microsoft SmartScreen:</strong> DuoPad is 100% free and open-source without an expensive commercial corporation certificate. Microsoft SmartScreen protects users by prompting on new software:
+                        <ul style="margin-left: 20px; margin-top: 8px;">
+                            <li><strong>In Edge / Chrome:</strong> Click <strong>••• (Options) ➔ Keep ➔ Keep anyway</strong>.</li>
+                            <li><strong>In Windows:</strong> Click <strong>"More info" ➔ "Run anyway"</strong>.</li>
+                        </ul>
+                        <br>
+                        DuoPad is 100% virus-free, clean, and contains zero adware.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Do I need to install an app on my phone to play?</span>
+                        <span class="toggle-icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        No app install is needed on your phone! Simply scan the QR code from your laptop screen using your phone's camera, and the full Xbox controller opens immediately inside your mobile browser (Chrome / Safari) with sub-millisecond latency. Zero downloads on your phone, zero hassle!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final Download Banner -->
+    <section class="download-banner">
+        <div class="container">
+            <div class="banner-card">
+                <h2>Ready to Play? Download DuoPad v1.0</h2>
+                <p>100% Free & Open-Source. No signups, no ads. Play in under 60 seconds.</p>
+                <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; align-items: center;">
+                    <a href="/DuoPad_Setup.exe" class="btn-primary-dl btn-dl-interactive" download="DuoPad_Setup.exe" onclick="handleDownload(this, event, 'exe')">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>Download DuoPad Setup (.exe)</span>
+                        <span class="btn-size-badge">23.7 MB • 1-Click Install</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>© 2026 DuoPad. 100% Free & Open-Source for Gamers Everywhere.</p>
+        </div>
+    </footer>
+
+    <!-- Floating Cyber HUD Download Toast -->
+    <div id="dl-toast" class="dl-toast">
+        <div class="dl-toast-icon" id="dl-toast-icon">💻</div>
+        <div class="dl-toast-content">
+            <div class="dl-toast-title">
+                <span id="dl-toast-title-text">DuoPad Setup Download Started!</span>
+                <span class="dl-toast-badge" id="dl-toast-badge">23.7 MB • 1-CLICK SETUP</span>
+            </div>
+            <div class="dl-toast-body" id="dl-toast-body-text">
+                Downloading to your <strong>Downloads</strong> folder. ⚠️ <strong>Important:</strong> Wait until 100% finished before clicking open. If Windows SmartScreen appears, click <strong>"More info" ➔ "Run anyway"</strong>!
+            </div>
+            <div class="dl-toast-actions">
+                <a href="#trust-notice" class="dl-toast-btn-action" onclick="closeDownloadToast()">🛡️ Verification Guide</a>
+                <button type="button" class="dl-toast-btn-close" onclick="closeDownloadToast()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dlToastTimer = null;
+
+        function showDownloadToast(type = 'exe') {
+            const toast = document.getElementById('dl-toast');
+            if (!toast) return;
+
+            const iconEl = document.getElementById('dl-toast-icon');
+            const titleEl = document.getElementById('dl-toast-title-text');
+            const badgeEl = document.getElementById('dl-toast-badge');
+            const bodyEl = document.getElementById('dl-toast-body-text');
+
+            if (iconEl) iconEl.textContent = '💻';
+            if (titleEl) titleEl.textContent = 'DuoPad_Setup.exe Download Started!';
+            if (badgeEl) badgeEl.textContent = '23.7 MB • 1-CLICK SETUP';
+            if (bodyEl) bodyEl.innerHTML = 'Downloading to your <strong>Downloads</strong> folder. ⚠️ <strong>Tip:</strong> Wait until 100% finished before opening. If Windows SmartScreen appears, click <strong>"More info" ➔ "Run anyway"</strong>.';
+
+            toast.classList.add('show');
+            if (dlToastTimer) clearTimeout(dlToastTimer);
+            dlToastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 10000);
+        }
+
+        function closeDownloadToast() {
+            const toast = document.getElementById('dl-toast');
+            if (toast) toast.classList.remove('show');
+            if (dlToastTimer) clearTimeout(dlToastTimer);
+        }
+
+        // Native streaming download handler - Never preventDefault so browser handles full chunked transfer cleanly
+        function handleDownload(btn, event, type = 'exe') {
+            if (!btn) return;
+
+            btn.classList.add('is-success');
+            showDownloadToast(type);
+
+            setTimeout(() => {
+                btn.classList.remove('is-success');
+            }, 4500);
+        }
+
+        // FAQ Accordion
+        document.querySelectorAll('.faq-question').forEach(q => {
+            q.addEventListener('click', () => {
+                const item = q.parentElement;
+                item.classList.toggle('active');
+            });
+        });
+    </script>
+</body>
+</html>

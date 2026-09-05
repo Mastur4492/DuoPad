@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C# build artifacts
+*.obj
+*.pdb
+*.ilk
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Temporary files
+*.tmp
+*.log
