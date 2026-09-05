@@ -766,6 +766,9 @@
             box-shadow: 0 0 24px rgba(34, 197, 94, 0.9);
             color: #ffffff;
         }
+        .active, .active-stick {
+            transition: none !important;
+        }
     </style>
 </head>
 <body>
@@ -889,7 +892,7 @@
 
     <!-- Scripts -->
     <script src="/static/socket.io.min.js"></script>
-    <script src="/static/controller.js?v=9"></script>
+    <script src="/static/controller.js?v=12"></script>
     <script>
         // PWA Service Worker & Install Prompt
         let deferredPrompt;

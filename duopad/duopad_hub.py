@@ -167,7 +167,7 @@ async def handle_connect(sid, environ):
                 except Exception:
                     pass
                 del old_ctrl
-            time.sleep(0.1)
+            await asyncio.sleep(0.05)
 
         try:
             ctrl = vg.VX360Gamepad()
