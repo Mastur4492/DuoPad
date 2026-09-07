@@ -30,7 +30,19 @@
 
     let assignedPlayer = null;
     let wakeLock = null;
-    let currentMode = 'gamepad'; // 'gamepad' or 'mouse'
+    let currentMode = 'xbox'; // 'xbox', 'browser', 'mouse'
+    let toastTimeout = null;
+
+    function showModeToast(text) {
+        const toast = document.getElementById('mode-toast');
+        if (!toast) return;
+        toast.textContent = text;
+        toast.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2200);
+    }
 
     // DOM Elements
     const statusOverlay = document.getElementById('status-overlay');
@@ -218,25 +230,39 @@
     }
 
     // --------------------------------------------------------------------------
-    // Dual-Mode Switcher: [ 🎮 Gamepad ] <---> [ 🖱️ Mouse & Desktop ]
+    // 3-Way Mode Switcher: [ 🎮 XBOX ] <---> [ 🌐 BROWSER ] <---> [ 🖱️ MOUSE ]
     // --------------------------------------------------------------------------
+    const MODES = ['xbox', 'browser', 'mouse'];
+    let currentModeIndex = 0;
+
     if (btnModeToggle) {
         btnModeToggle.addEventListener('click', () => {
             releaseAllInputs();
-            if (currentMode === 'gamepad') {
-                currentMode = 'mouse';
+            currentModeIndex = (currentModeIndex + 1) % MODES.length;
+            currentMode = MODES[currentModeIndex];
+
+            btnModeToggle.classList.remove('mode-browser', 'mode-mouse');
+            document.body.classList.remove('mode-browser-active', 'mode-mouse-active');
+
+            if (currentMode === 'xbox') {
+                if (modeIcon) modeIcon.textContent = '🎮';
+                if (modeText) modeText.textContent = 'XBOX';
+                showModeToast('🎮 XBOX 360 MODE - FIFA, GTA, Rocket League, Steam');
+                triggerHaptic(20);
+            } else if (currentMode === 'browser') {
+                btnModeToggle.classList.add('mode-browser');
+                document.body.classList.add('mode-browser-active');
+                if (modeIcon) modeIcon.textContent = '🌐';
+                if (modeText) modeText.textContent = 'BROWSER';
+                showModeToast('🌐 BROWSER GAMES - Poki, CrazyGames, Slope, Moto X3M');
+                triggerHaptic(30);
+            } else if (currentMode === 'mouse') {
                 btnModeToggle.classList.add('mode-mouse');
                 document.body.classList.add('mode-mouse-active');
                 if (modeIcon) modeIcon.textContent = '🖱️';
                 if (modeText) modeText.textContent = 'MOUSE';
-                triggerHaptic(30);
-            } else {
-                currentMode = 'gamepad';
-                btnModeToggle.classList.remove('mode-mouse');
-                document.body.classList.remove('mode-mouse-active');
-                if (modeIcon) modeIcon.textContent = '🎮';
-                if (modeText) modeText.textContent = 'GAMEPAD';
-                triggerHaptic(20);
+                showModeToast('🖱️ MOUSE & DESKTOP - Right Stick: Cursor | RT/A: Click');
+                triggerHaptic(35);
             }
         });
     }
@@ -339,9 +365,49 @@
         el.classList.add('active');
         triggerHaptic(14);
 
+        const btnName = el.dataset.btn || el.dataset.trigger;
+
+        if (currentMode === 'browser') {
+            // Online Free Browser Games (Poki, CrazyGames, Slope, Moto X3M, Subway Surfers)
+            if (btnName === 'A') {
+                sendKey('SPACE', true);
+                sendKey('ENTER', true);
+            } else if (btnName === 'B') {
+                sendKey('SHIFT', true);
+                sendKey('ESC', true);
+            } else if (btnName === 'X') {
+                sendKey('Z', true);
+                sendKey('E', true);
+            } else if (btnName === 'Y') {
+                sendKey('X', true);
+                sendKey('R', true);
+            } else if (btnName === 'RT') {
+                sendMouseClick('left', true);
+            } else if (btnName === 'LT') {
+                sendMouseClick('right', true);
+            } else if (btnName === 'LB') {
+                sendScroll(180);
+                sendKey('PAGEUP', true);
+            } else if (btnName === 'RB') {
+                sendScroll(-180);
+                sendKey('PAGEDOWN', true);
+            } else if (btnName === 'Start') {
+                sendKey('ENTER', true);
+            } else if (btnName === 'Back') {
+                sendKey('ESC', true);
+            } else if (btnName && btnName.startsWith('DPAD_')) {
+                const dir = btnName.replace('DPAD_', '');
+                sendKey(dir, true);
+                if (dir === 'UP') sendKey('W', true);
+                if (dir === 'DOWN') sendKey('S', true);
+                if (dir === 'LEFT') sendKey('A', true);
+                if (dir === 'RIGHT') sendKey('D', true);
+            }
+            return;
+        }
+
         if (currentMode === 'mouse') {
             // Universal Mouse Mode bindings
-            const btnName = el.dataset.btn || el.dataset.trigger;
             if (btnName === 'A' || btnName === 'RT') {
                 sendMouseClick('left', true);
             } else if (btnName === 'B' || btnName === 'LT') {
@@ -365,7 +431,7 @@
             return;
         }
 
-        // Standard Gamepad Mode
+        // Standard Gamepad Mode (Xbox 360)
         if (el.dataset.btn) {
             sendButton(el.dataset.btn, true);
         } else if (el.dataset.trigger) {
@@ -377,8 +443,45 @@
         activeTouchButtons.delete(touchId);
         el.classList.remove('active');
 
+        const btnName = el.dataset.btn || el.dataset.trigger;
+
+        if (currentMode === 'browser') {
+            if (btnName === 'A') {
+                sendKey('SPACE', false);
+                sendKey('ENTER', false);
+            } else if (btnName === 'B') {
+                sendKey('SHIFT', false);
+                sendKey('ESC', false);
+            } else if (btnName === 'X') {
+                sendKey('Z', false);
+                sendKey('E', false);
+            } else if (btnName === 'Y') {
+                sendKey('X', false);
+                sendKey('R', false);
+            } else if (btnName === 'RT') {
+                sendMouseClick('left', false);
+            } else if (btnName === 'LT') {
+                sendMouseClick('right', false);
+            } else if (btnName === 'LB') {
+                sendKey('PAGEUP', false);
+            } else if (btnName === 'RB') {
+                sendKey('PAGEDOWN', false);
+            } else if (btnName === 'Start') {
+                sendKey('ENTER', false);
+            } else if (btnName === 'Back') {
+                sendKey('ESC', false);
+            } else if (btnName && btnName.startsWith('DPAD_')) {
+                const dir = btnName.replace('DPAD_', '');
+                sendKey(dir, false);
+                if (dir === 'UP') sendKey('W', false);
+                if (dir === 'DOWN') sendKey('S', false);
+                if (dir === 'LEFT') sendKey('A', false);
+                if (dir === 'RIGHT') sendKey('D', false);
+            }
+            return;
+        }
+
         if (currentMode === 'mouse') {
-            const btnName = el.dataset.btn || el.dataset.trigger;
             if (btnName === 'A' || btnName === 'RT') {
                 sendMouseClick('left', false);
             } else if (btnName === 'B' || btnName === 'LT') {
@@ -476,8 +579,11 @@
         if (leftStickInstance) leftStickInstance.forceRelease();
         if (rightStickInstance) rightStickInstance.forceRelease();
 
-        // Release keyboard keys in mouse mode
-        ['W', 'A', 'S', 'D', 'SPACE', 'ENTER', 'ESC', 'UP', 'DOWN', 'LEFT', 'RIGHT'].forEach(k => sendKey(k, false));
+        // Release all keyboard keys and mouse clicks
+        ['W', 'A', 'S', 'D', 'SPACE', 'ENTER', 'ESC', 'SHIFT', 'CTRL', 'ALT', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'Z', 'X', 'C', 'V', 'B', 'E', 'R', 'PAGEUP', 'PAGEDOWN'].forEach(k => sendKey(k, false));
+        sendMouseClick('left', false);
+        sendMouseClick('right', false);
+        sendMouseClick('middle', false);
 
         sendReset();
     }
@@ -508,11 +614,12 @@
 
             // GPU compositing state
             this.rafPending = false;
+            this.rafId = null;
             this.pendingClampedX = 0;
             this.pendingClampedY = 0;
 
-            // Active WASD key states (for left stick in mouse mode)
-            this.activeKeys = { W: false, A: false, S: false, D: false };
+            // Active WASD + Arrow key states (for left stick in browser/mouse mode)
+            this.activeKeys = { W: false, A: false, S: false, D: false, UP: false, DOWN: false, LEFT: false, RIGHT: false };
 
             // Mouse mode continuous movement ticker
             this.mouseInterval = null;
@@ -559,8 +666,8 @@
 
             this.processTouch(stickTouch.clientX, stickTouch.clientY, true);
 
-            // Start mouse mode cursor movement ticker for Right Stick
-            if (currentMode === 'mouse' && this.stickType === 'right_stick') {
+            // Start mouse mode cursor movement ticker for Right Stick in mouse or browser mode
+            if ((currentMode === 'mouse' || currentMode === 'browser') && this.stickType === 'right_stick') {
                 this.startMouseTicker();
             }
         }
@@ -619,7 +726,7 @@
         forceRelease() {
             this.touchId = null;
             this.stopMouseTicker();
-            this.releaseWASD();
+            this.releaseHybridKeys();
             this.resetKnob();
         }
 
@@ -658,14 +765,19 @@
                 clampedY = (dy / dist) * this.maxRadius;
             }
 
-            // High-refresh rate 60/90/120Hz GPU Compositing via requestAnimationFrame
+            // High-refresh rate 60/90/120Hz GPU Compositing via requestAnimationFrame with anti-stick safeguard
             this.pendingClampedX = clampedX;
             this.pendingClampedY = clampedY;
             if (!this.rafPending) {
                 this.rafPending = true;
-                requestAnimationFrame(() => {
-                    this.knob.style.transform = `translate3d(${this.pendingClampedX}px, ${this.pendingClampedY}px, 0)`;
+                this.rafId = requestAnimationFrame(() => {
                     this.rafPending = false;
+                    this.rafId = null;
+                    if (this.touchId === null) {
+                        this.knob.style.transform = 'translate3d(0px, 0px, 0)';
+                        return;
+                    }
+                    this.knob.style.transform = `translate3d(${this.pendingClampedX}px, ${this.pendingClampedY}px, 0)`;
                 });
             }
 
@@ -684,10 +796,34 @@
                 this.currentY = 0.0;
             }
 
+            // Handle Browser Mode (Hybrid WASD + Arrow Keys for ANY Online Free Game)
+            if (currentMode === 'browser') {
+                if (this.stickType === 'left_stick') {
+                    const wNeed = this.currentY > 0.35;
+                    const sNeed = this.currentY < -0.35;
+                    const dNeed = this.currentX > 0.35;
+                    const aNeed = this.currentX < -0.35;
+
+                    if (wNeed !== this.activeKeys.W) { this.activeKeys.W = wNeed; sendKey('W', wNeed); }
+                    if (wNeed !== this.activeKeys.UP) { this.activeKeys.UP = wNeed; sendKey('UP', wNeed); }
+
+                    if (sNeed !== this.activeKeys.S) { this.activeKeys.S = sNeed; sendKey('S', sNeed); }
+                    if (sNeed !== this.activeKeys.DOWN) { this.activeKeys.DOWN = sNeed; sendKey('DOWN', sNeed); }
+
+                    if (dNeed !== this.activeKeys.D) { this.activeKeys.D = dNeed; sendKey('D', dNeed); }
+                    if (dNeed !== this.activeKeys.RIGHT) { this.activeKeys.RIGHT = dNeed; sendKey('RIGHT', dNeed); }
+
+                    if (aNeed !== this.activeKeys.A) { this.activeKeys.A = aNeed; sendKey('A', aNeed); }
+                    if (aNeed !== this.activeKeys.LEFT) { this.activeKeys.LEFT = aNeed; sendKey('LEFT', aNeed); }
+                }
+                // Also send stick to virtual controller for web games supporting Gamepad API
+                sendStick(this.stickType, this.currentX, this.currentY);
+                return;
+            }
+
             // Handle Universal Mouse / WASD Mode
             if (currentMode === 'mouse') {
                 if (this.stickType === 'left_stick') {
-                    // Left Stick maps to WASD for non-controller games
                     const wNeed = this.currentY > 0.35;
                     const sNeed = this.currentY < -0.35;
                     const dNeed = this.currentX > 0.35;
@@ -714,16 +850,26 @@
             }
         }
 
-        releaseWASD() {
+        releaseHybridKeys() {
             if (this.stickType === 'left_stick') {
-                if (this.activeKeys.W) { this.activeKeys.W = false; sendKey('W', false); }
-                if (this.activeKeys.S) { this.activeKeys.S = false; sendKey('S', false); }
-                if (this.activeKeys.D) { this.activeKeys.D = false; sendKey('D', false); }
-                if (this.activeKeys.A) { this.activeKeys.A = false; sendKey('A', false); }
+                ['W', 'A', 'S', 'D', 'UP', 'DOWN', 'LEFT', 'RIGHT'].forEach(k => {
+                    if (this.activeKeys[k]) {
+                        this.activeKeys[k] = false;
+                        sendKey(k, false);
+                    }
+                });
             }
         }
 
         resetKnob() {
+            if (this.rafId) {
+                cancelAnimationFrame(this.rafId);
+                this.rafId = null;
+            }
+            this.rafPending = false;
+            this.pendingClampedX = 0;
+            this.pendingClampedY = 0;
+
             if (this.base) this.base.classList.remove('active-stick');
             this.knob.style.transition = 'transform 0.08s cubic-bezier(0.25, 1, 0.5, 1)';
             this.knob.style.transform = 'translate3d(0px, 0px, 0)';
@@ -734,8 +880,8 @@
             this.lastSentY = 0.0;
             this.lastSendTimestamp = performance.now();
 
-            // Instant zero transmission in Gamepad mode
-            if (currentMode === 'gamepad') {
+            // Instant zero transmission in Gamepad & Browser mode
+            if (currentMode === 'xbox' || currentMode === 'browser' || currentMode === 'gamepad') {
                 sendStick(this.stickType, 0.0, 0.0);
             }
         }

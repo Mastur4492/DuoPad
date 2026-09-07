@@ -9,12 +9,29 @@
     <meta name="theme-color" content="#03070d">
     <meta name="apple-mobile-web-app-title" content="DuoPad">
     <title>DuoPad - Smartphone Gamepad</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
     <link rel="shortcut icon" href="/static/icon-192.png">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="192x192" href="/static/icon-192.png">
     <link rel="apple-touch-icon" sizes="512x512" href="/static/icon-512.png">
     <link rel="manifest" href="/static/manifest.json">
+    
+    <script>
+        // Force unregister all stale Service Workers and wipe browser cache
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (var r of registrations) { r.unregister(); }
+            }).catch(function() {});
+        }
+        if ('caches' in window) {
+            caches.keys().then(function(keys) {
+                for (var k of keys) { caches.delete(k); }
+            }).catch(function() {});
+        }
+    </script>
     
     <style>
         /* ==========================================================================
@@ -770,7 +787,7 @@
             transition: none !important;
         }
 
-        /* Mode Switcher Pill in HUD */
+        /* 3-Way Mode Switcher Pill in HUD */
         .hud-mode-pill {
             display: inline-flex;
             align-items: center;
@@ -785,12 +802,57 @@
             letter-spacing: 0.6px;
             cursor: pointer;
             transition: all 0.2s ease;
+            user-select: none;
+        }
+        .hud-mode-pill.mode-browser {
+            background: rgba(168, 85, 247, 0.24);
+            border-color: #c084fc;
+            color: #f3e8ff;
+            box-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
         }
         .hud-mode-pill.mode-mouse {
             background: rgba(234, 179, 8, 0.22);
             border-color: #eab308;
             color: #fef08a;
             box-shadow: 0 0 14px rgba(234, 179, 8, 0.5);
+        }
+        .hud-btn-reload {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #94a3b8;
+            border-radius: 10px;
+            padding: 2px 7px;
+            font-size: 0.70rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Animated Cyberpunk Mode Toast Notification */
+        .mode-toast {
+            position: fixed;
+            top: 13%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: rgba(6, 17, 30, 0.95);
+            border: 1.5px solid var(--border-cyan-bright);
+            color: #ffffff;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 229, 255, 0.4);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: center;
+            max-width: 92vw;
+            white-space: nowrap;
+        }
+        .mode-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
         /* Cybernetic Scroll Strip */
@@ -945,14 +1007,18 @@
             <span class="status-dot"></span>
             <span id="hud-player-text">P1</span>
         </div>
-        <button id="btn-mode-toggle" class="hud-mode-pill" title="Toggle Gamepad / Mouse & Desktop Mode">
+        <button id="btn-mode-toggle" class="hud-mode-pill" title="Toggle Mode: Xbox Gamepad / Browser Games / Desktop Mouse">
             <span id="mode-icon">🎮</span>
-            <span id="mode-text">GAMEPAD</span>
+            <span id="mode-text">XBOX</span>
         </button>
+        <button id="btn-reload-app" class="hud-btn-reload" title="Force Refresh Controller">🔄</button>
         <span class="hud-ping" id="hud-ping">-- ms</span>
-        <button id="btn-install-app" class="hud-btn-install" style="display:none;" title="Add to Phone Home Screen">📲 Add to Home</button>
+        <button id="btn-install-app" class="hud-btn-install" style="display:none;" title="Add to Phone Home Screen">📲 Add</button>
         <button id="btn-fullscreen" class="hud-btn-fs" title="Toggle Fullscreen">⛶</button>
     </div>
+
+    <!-- Mode Toast Popup -->
+    <div id="mode-toast" class="mode-toast">🎮 XBOX 360 MODE ACTIVE</div>
 
     <!-- Main Gamepad Stage -->
     <div class="gamepad-stage">
@@ -1027,9 +1093,17 @@
 
     <!-- Scripts -->
     <script src="/static/socket.io.min.js"></script>
-    <script src="/static/controller.js?v=20"></script>
+    <script src="/static/controller.js?v=35"></script>
     <script>
-        // PWA Service Worker & Install Prompt
+        // Force Reload Handler
+        const btnReload = document.getElementById('btn-reload-app');
+        if (btnReload) {
+            btnReload.addEventListener('click', () => {
+                window.location.href = '/?t=' + Date.now();
+            });
+        }
+
+        // PWA Install Prompt
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -1065,10 +1139,6 @@
         }
         window.addEventListener('touchstart', enterFullscreen, { passive: true });
         window.addEventListener('click', enterFullscreen, { passive: true });
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js').catch(() => {});
-        }
     </script>
 </body>
 </html>

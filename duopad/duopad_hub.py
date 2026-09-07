@@ -123,7 +123,16 @@ BUTTON_MAP = {
 # ---------------------------------------------------------------------------
 # Native Windows Mouse & Keyboard Emulation (Universal PC & Scroll Engine)
 # ---------------------------------------------------------------------------
-user32 = ctypes.windll.user32 if sys.platform == "win32" else None
+if sys.platform == "win32":
+    from ctypes import wintypes
+    user32 = ctypes.windll.user32
+    user32.mouse_event.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.DWORD, wintypes.DWORD, ctypes.c_size_t]
+    user32.mouse_event.restype = None
+    user32.keybd_event.argtypes = [wintypes.BYTE, wintypes.BYTE, wintypes.DWORD, ctypes.c_size_t]
+    user32.keybd_event.restype = None
+else:
+    user32 = None
+
 MOUSEEVENTF_MOVE = 0x0001
 MOUSEEVENTF_LEFTDOWN = 0x0002
 MOUSEEVENTF_LEFTUP = 0x0004
@@ -137,8 +146,11 @@ VK_MAP = {
     'W': 0x57, 'A': 0x41, 'S': 0x53, 'D': 0x44,
     'UP': 0x26, 'DOWN': 0x28, 'LEFT': 0x25, 'RIGHT': 0x27,
     'SPACE': 0x20, 'ENTER': 0x0D, 'ESC': 0x1B, 'ESCAPE': 0x1B,
-    'SHIFT': 0x10, 'CTRL': 0x11, 'TAB': 0x09, 'E': 0x45, 'Q': 0x51,
-    'R': 0x52, 'F': 0x46, 'C': 0x43, '1': 0x31, '2': 0x32, '3': 0x33, '4': 0x34
+    'SHIFT': 0x10, 'CTRL': 0x11, 'ALT': 0x12, 'TAB': 0x09,
+    'E': 0x45, 'Q': 0x51, 'R': 0x52, 'F': 0x46, 'C': 0x43,
+    'Z': 0x5A, 'X': 0x58, 'V': 0x56, 'B': 0x42, 'J': 0x4A, 'K': 0x4B,
+    'PAGEUP': 0x21, 'PAGEDOWN': 0x22,
+    '1': 0x31, '2': 0x32, '3': 0x33, '4': 0x34
 }
 KEYEVENTF_KEYUP = 0x0002
 
@@ -154,7 +166,11 @@ def get_local_ip():
     return ip
 
 async def handle_index(request):
-    return web.FileResponse(os.path.join(TEMPLATES_DIR, 'index.html'))
+    resp = web.FileResponse(os.path.join(TEMPLATES_DIR, 'index.html'))
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 async def handle_status(request):
     return web.json_response({
@@ -243,7 +259,8 @@ async def handle_input(sid, data):
         if inp_type == 'scroll':
             delta = int(data.get('delta', 0))
             if user32 and delta != 0:
-                user32.mouse_event(MOUSEEVENTF_WHEEL, 0, 0, delta, 0)
+                dw_data = ctypes.c_uint32(delta & 0xFFFFFFFF).value
+                user32.mouse_event(MOUSEEVENTF_WHEEL, 0, 0, dw_data, 0)
             return
 
         elif inp_type == 'mouse_move':
