@@ -73,6 +73,29 @@ BUTTON_MAP = {
     'RS': vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_THUMB,
 }
 
+# ---------------------------------------------------------------------------
+# Native Windows Mouse & Keyboard Emulation (Universal PC & Scroll Engine)
+# ---------------------------------------------------------------------------
+import ctypes
+user32 = ctypes.windll.user32 if sys.platform == "win32" else None
+MOUSEEVENTF_MOVE = 0x0001
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
+MOUSEEVENTF_RIGHTDOWN = 0x0008
+MOUSEEVENTF_RIGHTUP = 0x0010
+MOUSEEVENTF_MIDDLEDOWN = 0x0020
+MOUSEEVENTF_MIDDLEUP = 0x0040
+MOUSEEVENTF_WHEEL = 0x0800
+
+VK_MAP = {
+    'W': 0x57, 'A': 0x41, 'S': 0x53, 'D': 0x44,
+    'UP': 0x26, 'DOWN': 0x28, 'LEFT': 0x25, 'RIGHT': 0x27,
+    'SPACE': 0x20, 'ENTER': 0x0D, 'ESC': 0x1B, 'ESCAPE': 0x1B,
+    'SHIFT': 0x10, 'CTRL': 0x11, 'TAB': 0x09, 'E': 0x45, 'Q': 0x51,
+    'R': 0x52, 'F': 0x46, 'C': 0x43, '1': 0x31, '2': 0x32, '3': 0x33, '4': 0x34
+}
+KEYEVENTF_KEYUP = 0x0002
+
 def cleanup_controllers():
     """Detach all connected controllers on server shutdown."""
     print("\n[*] Server stopping. Detaching controllers...")
@@ -192,13 +215,56 @@ async def handle_input(sid, data):
       - right_stick: { type: 'right_stick', x: -1.0 to 1.0, y: -1.0 to 1.0 }
       - reset:       { type: 'reset' }
     """
+    inp_type = data.get('type')
+    
+    # 1. Native Windows Mouse & Scroll & Keyboard Handling (Universal PC Control)
+    try:
+        if inp_type == 'scroll':
+            delta = int(data.get('delta', 0))
+            if user32 and delta != 0:
+                user32.mouse_event(MOUSEEVENTF_WHEEL, 0, 0, delta, 0)
+            return
+
+        elif inp_type == 'mouse_move':
+            dx = int(data.get('dx', 0))
+            dy = int(data.get('dy', 0))
+            if user32 and (dx != 0 or dy != 0):
+                user32.mouse_event(MOUSEEVENTF_MOVE, dx, dy, 0, 0)
+            return
+
+        elif inp_type == 'mouse_click':
+            btn = data.get('button', 'left')
+            pressed = bool(data.get('pressed', False))
+            if user32:
+                if btn == 'left':
+                    flag = MOUSEEVENTF_LEFTDOWN if pressed else MOUSEEVENTF_LEFTUP
+                elif btn == 'right':
+                    flag = MOUSEEVENTF_RIGHTDOWN if pressed else MOUSEEVENTF_RIGHTUP
+                elif btn == 'middle':
+                    flag = MOUSEEVENTF_MIDDLEDOWN if pressed else MOUSEEVENTF_MIDDLEUP
+                else:
+                    flag = 0
+                if flag:
+                    user32.mouse_event(flag, 0, 0, 0, 0)
+            return
+
+        elif inp_type == 'key':
+            k = str(data.get('key', '')).upper()
+            pressed = bool(data.get('pressed', False))
+            if user32 and k in VK_MAP:
+                vk = VK_MAP[k]
+                flags = 0 if pressed else KEYEVENTF_KEYUP
+                user32.keybd_event(vk, 0, flags, 0)
+            return
+    except Exception:
+        pass
+
+    # 2. Virtual Xbox 360 Controller Handling (Player 1 & 2 via ViGEmBus)
     player_num = sid_to_player.get(sid)
     if not player_num or player_num not in controllers:
         return
     
     ctrl = controllers[player_num]
-    inp_type = data.get('type')
-    
     try:
         if inp_type == 'button':
             btn_name = data.get('button')
