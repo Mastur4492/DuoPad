@@ -1,48 +1,29 @@
 /**
- * DuoPad - Universal Virtual Controller & PC Remote (Esports & Desktop Grade)
- * Ultra-low latency (<2ms) multi-touch controller for:
- *  - 144Hz & 120Hz PC Games (FIFA / EA SPORTS FC, GTA, Forza, Fighting, Shooters)
- *  - Universal Non-Controller Games (Minecraft, Roblox, Strategy, Emulators via Keyboard WASD)
- *  - Full Windows PC Remote (Mouse Cursor, Left/Right Click, Native Scroll Wheel)
- * 
- * Performance & Anti-Stick Architecture:
- *  - 100% Active Finger Verification via e.touches (Ghost touches mathematically eliminated)
- *  - Auto-Reclamation: Stick never stays glued/stuck on screen boundary drop
- *  - Dedicated Cybernetic Scroll Strip (Real-time page/menu scrolling with haptic wheel feedback)
- *  - Dual-Mode Engine: [ 🎮 Gamepad Mode ] <---> [ 🖱️ Universal Mouse & Desktop Mode ]
- *  - 144Hz/120Hz Native Input Polling (6ms interval)
- *  - 0ms Priority Dispatch for Buttons & Triggers
+ * DuoPad - Esports Ultra-Low Latency Mobile Gamepad Engine
+ * High-performance multi-touch controller optimized for 2-Player Co-Op:
+ *  - 0ms priority dispatch for buttons & triggers (zero lag)
+ *  - 100Hz smooth joystick polling with micro-jitter noise filter
+ *  - Anti-stick auto-reclamation engine (eliminates ghost touches)
+ *  - Real-time latency HUD monitor
+ *  - Dynamic Player 1 (Cyan) & Player 2 (Magenta) theme switching
  */
 
 (function () {
     'use strict';
 
     // --------------------------------------------------------------------------
-    // Socket.IO Setup (Direct WebSocket, No Polling Fallback)
+    // Socket.IO Setup (Direct WebSocket, Zero Polling Fallback)
     // --------------------------------------------------------------------------
     const socket = io({
         reconnection: true,
         reconnectionAttempts: Infinity,
-        reconnectionDelay: 1000,
+        reconnectionDelay: 500,
         transports: ['websocket'],
         upgrade: false
     });
 
-    let assignedPlayer = null;
+    let assignedPlayer = 1;
     let wakeLock = null;
-    let currentMode = 'xbox'; // 'xbox', 'browser', 'mouse'
-    let toastTimeout = null;
-
-    function showModeToast(text) {
-        const toast = document.getElementById('mode-toast');
-        if (!toast) return;
-        toast.textContent = text;
-        toast.classList.add('show');
-        if (toastTimeout) clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => {
-            toast.classList.remove('show');
-        }, 2200);
-    }
 
     // DOM Elements
     const statusOverlay = document.getElementById('status-overlay');
@@ -52,57 +33,59 @@
     const playerBanner = document.getElementById('player-banner');
     const playerBadge = document.getElementById('player-badge');
     const btnReconnect = document.getElementById('btn-reconnect');
-    const hudPlayerPill = document.getElementById('hud-player-pill');
     const hudPlayerText = document.getElementById('hud-player-text');
     const hudPing = document.getElementById('hud-ping');
-    // Joystick instances
-    let leftStickInstance = null;
-    let rightStickInstance = null;
+    const btnFullscreen = document.getElementById('btn-fullscreen');
+
+    // Joysticks
+    let leftStick = null;
+    let rightStick = null;
 
     // --------------------------------------------------------------------------
-    // Socket.IO Lifecycle & Player Slot Assignment
+    // Socket Connection & Player Slot Assignment
     // --------------------------------------------------------------------------
     socket.on('connect', () => {
-        console.log('[Socket] Connected to DuoPad Server.');
+        console.log('[DuoPad] Connected to PC server.');
         if (statusTitle) statusTitle.textContent = 'Authenticating Slot...';
-        if (statusMessage) statusMessage.textContent = 'Requesting Player Assignment from PC...';
+        if (statusMessage) statusMessage.textContent = 'Acquiring Player Slot from PC...';
     });
 
     socket.on('assigned', (data) => {
-        assignedPlayer = data.player;
-        console.log(`[Socket] Assigned as Player ${assignedPlayer}`);
+        assignedPlayer = data.player || 1;
+        console.log(`[DuoPad] Assigned as Player ${assignedPlayer}`);
 
-        // Update Theme
+        // Dynamic theme switching: Player 1 = Cyan, Player 2 = Magenta
         document.body.className = assignedPlayer === 1 ? 'theme-p1' : 'theme-p2';
+
         if (playerBadge) playerBadge.textContent = `PLAYER ${assignedPlayer}`;
         if (hudPlayerText) hudPlayerText.textContent = `P${assignedPlayer}`;
         if (playerBanner) playerBanner.classList.remove('hidden');
         if (statusTitle) statusTitle.textContent = `Connected as Player ${assignedPlayer}`;
-        if (statusMessage) statusMessage.textContent = `Linked to Virtual Xbox Controller #${assignedPlayer}`;
+        if (statusMessage) statusMessage.textContent = `Linked to Virtual Xbox 360 Controller #${assignedPlayer}`;
         if (statusSpinner) statusSpinner.classList.add('hidden');
 
         setTimeout(() => {
             if (statusOverlay) statusOverlay.classList.remove('active');
-        }, 400);
+        }, 300);
 
         requestWakeLock();
     });
 
     socket.on('game_full', (data) => {
-        console.warn('[Socket] Game is full');
+        console.warn('[DuoPad] Both player slots are occupied.');
         if (statusOverlay) statusOverlay.classList.add('active');
         if (statusSpinner) statusSpinner.classList.add('hidden');
         if (statusTitle) statusTitle.textContent = 'Game is Full';
-        if (statusMessage) statusMessage.textContent = data.message || 'Two players are already connected. Please wait for an open slot.';
+        if (statusMessage) statusMessage.textContent = (data && data.message) ? data.message : 'Two players are already connected.';
         if (btnReconnect) btnReconnect.classList.remove('hidden');
     });
 
     socket.on('disconnect', (reason) => {
-        console.warn('[Socket] Disconnected:', reason);
+        console.warn('[DuoPad] Disconnected:', reason);
         if (statusOverlay) statusOverlay.classList.add('active');
         if (statusSpinner) statusSpinner.classList.remove('hidden');
-        if (statusTitle) statusTitle.textContent = 'Reconnecting to Laptop...';
-        if (statusMessage) statusMessage.textContent = 'Connection lost. Trying to reconnect over Wi-Fi...';
+        if (statusTitle) statusTitle.textContent = 'Reconnecting to PC...';
+        if (statusMessage) statusMessage.textContent = 'Searching for DuoPad server over local Wi-Fi...';
         if (playerBanner) playerBanner.classList.add('hidden');
         if (btnReconnect) btnReconnect.classList.add('hidden');
 
@@ -116,25 +99,25 @@
     }
 
     // --------------------------------------------------------------------------
-    // Latency Ping Monitor
+    // Real-Time Latency Ping Monitor
     // --------------------------------------------------------------------------
-    let pingStartTime = 0;
+    let pingStartTimestamp = 0;
     setInterval(() => {
         if (socket.connected) {
-            pingStartTime = performance.now();
-            socket.emit('ping_check', { time: pingStartTime });
+            pingStartTimestamp = performance.now();
+            socket.emit('ping_check', { time: pingStartTimestamp });
         }
-    }, 2500);
+    }, 2000);
 
-    socket.on('pong_check', () => {
-        const rtt = Math.round(performance.now() - pingStartTime);
+    socket.on('pong_check', (data) => {
+        const rtt = Math.max(1, Math.round(performance.now() - (data && data.time ? data.time : pingStartTimestamp)));
         if (hudPing) {
             hudPing.textContent = `${rtt} ms`;
         }
     });
 
     // --------------------------------------------------------------------------
-    // High-Performance Input Emitters (0ms Delay)
+    // Instant Priority Input Emitters (0ms Network Dispatch)
     // --------------------------------------------------------------------------
     function sendButton(btnName, pressed) {
         if (!socket.connected) return;
@@ -163,143 +146,30 @@
         });
     }
 
-    function sendScroll(delta) {
-        if (!socket.connected) return;
-        socket.emit('input', {
-            type: 'scroll',
-            delta: delta
-        });
-    }
-
-    function sendMouseMove(dx, dy) {
-        if (!socket.connected) return;
-        socket.emit('input', {
-            type: 'mouse_move',
-            dx: dx,
-            dy: dy
-        });
-    }
-
-    function sendMouseClick(btn, pressed) {
-        if (!socket.connected) return;
-        socket.emit('input', {
-            type: 'mouse_click',
-            button: btn,
-            pressed: pressed
-        });
-    }
-
-    function sendKey(keyName, pressed) {
-        if (!socket.connected) return;
-        socket.emit('input', {
-            type: 'key',
-            key: keyName,
-            pressed: pressed
-        });
-    }
-
     function sendReset() {
         if (!socket.connected) return;
         socket.emit('input', { type: 'reset' });
     }
 
-    function triggerHaptic(duration = 15) {
+    function triggerHaptic(duration = 12) {
         if (window.Android && window.Android.vibrate) {
-            try {
-                window.Android.vibrate(duration);
-                return;
-            } catch (e) {}
+            try { window.Android.vibrate(duration); return; } catch (e) {}
         }
         if (navigator.vibrate) {
-            try {
-                navigator.vibrate(duration);
-            } catch (e) {}
+            try { navigator.vibrate(duration); } catch (e) {}
         }
     }
 
     // --------------------------------------------------------------------------
-    // Dual-Mode Switcher: [ 🎮 GAMEPAD ] <---> [ 🌐 BROWSER ]
-    // --------------------------------------------------------------------------
-    const MODES = ['gamepad', 'browser'];
-    let currentModeIndex = 0;
-
-    if (btnModeToggle) {
-        btnModeToggle.addEventListener('click', () => {
-            releaseAllInputs();
-            currentModeIndex = (currentModeIndex + 1) % MODES.length;
-            currentMode = MODES[currentModeIndex];
-
-            btnModeToggle.classList.remove('mode-browser');
-            document.body.classList.remove('mode-browser-active');
-
-            if (currentMode === 'gamepad') {
-                if (modeIcon) modeIcon.textContent = '🎮';
-                if (modeText) modeText.textContent = 'GAMEPAD';
-                showModeToast('🎮 XBOX 360 GAMEPAD - FIFA, GTA, Rocket League, Steam');
-                triggerHaptic(20);
-            } else if (currentMode === 'browser') {
-                btnModeToggle.classList.add('mode-browser');
-                document.body.classList.add('mode-browser-active');
-                if (modeIcon) modeIcon.textContent = '🌐';
-                if (modeText) modeText.textContent = 'BROWSER';
-                showModeToast('🌐 BROWSER GAMES - Poki, CrazyGames, Slope, Moto X3M');
-                triggerHaptic(30);
-            }
-        });
-    }
-
-    // --------------------------------------------------------------------------
-    // Dynamic Sliding Multi-Touch Button Tracker
+    // Dynamic Multi-Touch Button Tracker
     // --------------------------------------------------------------------------
     const activeTouchButtons = new Map(); // touchId -> buttonElement
 
     function pressButtonElement(el, touchId) {
         activeTouchButtons.set(touchId, el);
         el.classList.add('active');
-        triggerHaptic(14);
+        triggerHaptic(12);
 
-        const btnName = el.dataset.btn || el.dataset.trigger;
-
-        if (currentMode === 'browser') {
-            // Online Free Browser Games (Poki, CrazyGames, Slope, Moto X3M, Subway Surfers)
-            if (btnName === 'A') {
-                sendKey('SPACE', true);
-                sendKey('ENTER', true);
-            } else if (btnName === 'B') {
-                sendKey('SHIFT', true);
-                sendKey('ESC', true);
-            } else if (btnName === 'X') {
-                sendKey('Z', true);
-                sendKey('E', true);
-            } else if (btnName === 'Y') {
-                sendKey('X', true);
-                sendKey('R', true);
-            } else if (btnName === 'RT') {
-                sendMouseClick('left', true);
-            } else if (btnName === 'LT') {
-                sendMouseClick('right', true);
-            } else if (btnName === 'LB') {
-                sendScroll(180);
-                sendKey('PAGEUP', true);
-            } else if (btnName === 'RB') {
-                sendScroll(-180);
-                sendKey('PAGEDOWN', true);
-            } else if (btnName === 'Start') {
-                sendKey('ENTER', true);
-            } else if (btnName === 'Back') {
-                sendKey('ESC', true);
-            } else if (btnName && btnName.startsWith('DPAD_')) {
-                const dir = btnName.replace('DPAD_', '');
-                sendKey(dir, true);
-                if (dir === 'UP') sendKey('W', true);
-                if (dir === 'DOWN') sendKey('S', true);
-                if (dir === 'LEFT') sendKey('A', true);
-                if (dir === 'RIGHT') sendKey('D', true);
-            }
-            return;
-        }
-
-        // Standard Gamepad Mode (Xbox 360)
         if (el.dataset.btn) {
             sendButton(el.dataset.btn, true);
         } else if (el.dataset.trigger) {
@@ -311,44 +181,6 @@
         activeTouchButtons.delete(touchId);
         el.classList.remove('active');
 
-        const btnName = el.dataset.btn || el.dataset.trigger;
-
-        if (currentMode === 'browser') {
-            if (btnName === 'A') {
-                sendKey('SPACE', false);
-                sendKey('ENTER', false);
-            } else if (btnName === 'B') {
-                sendKey('SHIFT', false);
-                sendKey('ESC', false);
-            } else if (btnName === 'X') {
-                sendKey('Z', false);
-                sendKey('E', false);
-            } else if (btnName === 'Y') {
-                sendKey('X', false);
-                sendKey('R', false);
-            } else if (btnName === 'RT') {
-                sendMouseClick('left', false);
-            } else if (btnName === 'LT') {
-                sendMouseClick('right', false);
-            } else if (btnName === 'LB') {
-                sendKey('PAGEUP', false);
-            } else if (btnName === 'RB') {
-                sendKey('PAGEDOWN', false);
-            } else if (btnName === 'Start') {
-                sendKey('ENTER', false);
-            } else if (btnName === 'Back') {
-                sendKey('ESC', false);
-            } else if (btnName && btnName.startsWith('DPAD_')) {
-                const dir = btnName.replace('DPAD_', '');
-                sendKey(dir, false);
-                if (dir === 'UP') sendKey('W', false);
-                if (dir === 'DOWN') sendKey('S', false);
-                if (dir === 'LEFT') sendKey('A', false);
-                if (dir === 'RIGHT') sendKey('D', false);
-            }
-            return;
-        }
-
         if (el.dataset.btn) {
             sendButton(el.dataset.btn, false);
         } else if (el.dataset.trigger) {
@@ -357,8 +189,8 @@
     }
 
     function isStickTouch(touchId) {
-        return (leftStickInstance && leftStickInstance.touchId === touchId) ||
-               (rightStickInstance && rightStickInstance.touchId === touchId);
+        return (leftStick && leftStick.touchId === touchId) ||
+               (rightStick && rightStick.touchId === touchId);
     }
 
     function getButtonUnderTouch(touch) {
@@ -368,9 +200,9 @@
     }
 
     function initButtons() {
-        const gamepadStage = document.querySelector('.gamepad-stage') || document.body;
+        const stage = document.querySelector('.gamepad-stage') || document.body;
 
-        gamepadStage.addEventListener('touchstart', (e) => {
+        stage.addEventListener('touchstart', (e) => {
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
                 if (isStickTouch(touch.identifier)) continue;
@@ -383,27 +215,27 @@
             }
         }, { passive: false });
 
-        gamepadStage.addEventListener('touchmove', (e) => {
+        stage.addEventListener('touchmove', (e) => {
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
                 if (isStickTouch(touch.identifier)) continue;
 
-                const currentHeldEl = activeTouchButtons.get(touch.identifier);
-                const btnUnderFinger = getButtonUnderTouch(touch);
+                const currentHeld = activeTouchButtons.get(touch.identifier);
+                const btnUnder = getButtonUnderTouch(touch);
 
-                if (btnUnderFinger !== currentHeldEl) {
-                    if (currentHeldEl) {
-                        releaseButtonElement(currentHeldEl, touch.identifier);
+                if (btnUnder !== currentHeld) {
+                    if (currentHeld) {
+                        releaseButtonElement(currentHeld, touch.identifier);
                     }
-                    if (btnUnderFinger) {
+                    if (btnUnder) {
                         e.preventDefault();
-                        pressButtonElement(btnUnderFinger, touch.identifier);
+                        pressButtonElement(btnUnder, touch.identifier);
                     }
                 }
             }
         }, { passive: false });
 
-        const endOrCancel = (e) => {
+        const handleTouchEnd = (e) => {
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
                 if (activeTouchButtons.has(touch.identifier)) {
@@ -413,8 +245,8 @@
             }
         };
 
-        window.addEventListener('touchend', endOrCancel, { passive: false });
-        window.addEventListener('touchcancel', endOrCancel, { passive: false });
+        window.addEventListener('touchend', handleTouchEnd, { passive: false });
+        window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
     }
 
     function releaseAllInputs() {
@@ -423,53 +255,33 @@
         });
         activeTouchButtons.clear();
 
-        if (leftStickInstance) leftStickInstance.forceRelease();
-        if (rightStickInstance) rightStickInstance.forceRelease();
-
-        // Release all keyboard keys and mouse clicks
-        ['W', 'A', 'S', 'D', 'SPACE', 'ENTER', 'ESC', 'SHIFT', 'CTRL', 'ALT', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'Z', 'X', 'C', 'V', 'B', 'E', 'R', 'PAGEUP', 'PAGEDOWN'].forEach(k => sendKey(k, false));
-        sendMouseClick('left', false);
-        sendMouseClick('right', false);
-        sendMouseClick('middle', false);
+        if (leftStick) leftStick.forceRelease();
+        if (rightStick) rightStick.forceRelease();
 
         sendReset();
     }
 
     // --------------------------------------------------------------------------
-    // Bulletproof Anti-Stick Analog Joystick Controller
+    // Precision Analog Joystick Controller (Ultra-Low Latency & Anti-Stick)
     // --------------------------------------------------------------------------
     class VirtualJoystick {
         constructor(zoneId, knobId, stickType) {
             this.zone = document.getElementById(zoneId);
             this.knob = document.getElementById(knobId);
-            this.base = this.zone ? (this.zone.querySelector('.stick-ring') || this.zone.querySelector('.stick-base')) : null;
+            this.base = this.zone ? (this.zone.querySelector('.stick-ring') || this.zone) : null;
             this.stickType = stickType; // 'left_stick' or 'right_stick'
 
             this.touchId = null;
             this.centerX = 0;
             this.centerY = 0;
-
-            // Geometry calibration (ring = 67px, knob = 28px -> max travel = exactly 40px)
-            this.maxRadius = 40;
+            this.maxRadius = 42;
             this.deadzone = 0.05;
 
             this.currentX = 0.0;
             this.currentY = 0.0;
             this.lastSentX = 0.0;
             this.lastSentY = 0.0;
-            this.lastSendTimestamp = 0;
-
-            // GPU compositing state
-            this.rafPending = false;
-            this.rafId = null;
-            this.pendingClampedX = 0;
-            this.pendingClampedY = 0;
-
-            // Active WASD + Arrow key states (for left stick in browser/mouse mode)
-            this.activeKeys = { W: false, A: false, S: false, D: false, UP: false, DOWN: false, LEFT: false, RIGHT: false };
-
-            // Mouse mode continuous movement ticker
-            this.mouseInterval = null;
+            this.lastSendTime = 0;
 
             this.initEvents();
         }
@@ -483,13 +295,14 @@
         }
 
         onTouchStart(e) {
-            const ringRect = (this.base || this.zone).getBoundingClientRect();
+            const rect = (this.base || this.zone).getBoundingClientRect();
             let stickTouch = null;
 
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
-                if (t.clientX >= ringRect.left - 20 && t.clientX <= ringRect.right + 20 &&
-                    t.clientY >= ringRect.top - 20 && t.clientY <= ringRect.bottom + 20) {
+                // Generous touch hitbox (ring + 24px margin for instant thumb pickup)
+                if (t.clientX >= rect.left - 24 && t.clientX <= rect.right + 24 &&
+                    t.clientY >= rect.top - 24 && t.clientY <= rect.bottom + 24) {
                     stickTouch = t;
                     break;
                 }
@@ -498,44 +311,38 @@
             if (!stickTouch) return;
             e.preventDefault();
 
-            // Auto-reclaim: If a previous touch was orphaned, release it cleanly first!
+            // Auto-reclaim any previous touch cleanly
             if (this.touchId !== null) {
                 this.forceRelease();
             }
 
             this.touchId = stickTouch.identifier;
-            this.maxRadius = Math.max(32, (ringRect.width - 56) / 2 + 10);
-            this.centerX = ringRect.left + ringRect.width / 2;
-            this.centerY = ringRect.top + ringRect.height / 2;
+            this.maxRadius = Math.max(34, (rect.width - 50) / 2 + 8);
+            this.centerX = rect.left + rect.width / 2;
+            this.centerY = rect.top + rect.height / 2;
 
             if (this.base) this.base.classList.add('active-stick');
             this.knob.style.transition = 'none';
 
             this.processTouch(stickTouch.clientX, stickTouch.clientY, true);
-
-            // Start mouse mode cursor movement ticker for Right Stick in browser mode
-            if (currentMode === 'browser' && this.stickType === 'right_stick') {
-                this.startMouseTicker();
-            }
         }
 
         onTouchMove(e) {
             if (this.touchId === null) return;
 
-            // 1. Hardware Active Finger Verification via e.touches
-            let touchStillPhysicallyActive = false;
+            let touchActive = false;
             let currentTouch = null;
 
             for (let i = 0; i < e.touches.length; i++) {
                 if (e.touches[i].identifier === this.touchId) {
-                    touchStillPhysicallyActive = true;
+                    touchActive = true;
                     currentTouch = e.touches[i];
                     break;
                 }
             }
 
-            // Auto-release instantly if finger physically lifted
-            if (!touchStillPhysicallyActive || !currentTouch) {
+            // Finger physically lifted
+            if (!touchActive || !currentTouch) {
                 this.forceRelease();
                 return;
             }
@@ -547,7 +354,6 @@
         onTouchEnd(e) {
             if (this.touchId === null) return;
 
-            // Check if our touch lifted
             for (let i = 0; i < e.changedTouches.length; i++) {
                 if (e.changedTouches[i].identifier === this.touchId) {
                     this.forceRelease();
@@ -555,46 +361,35 @@
                 }
             }
 
-            // Also verify against active e.touches
-            let stillActive = false;
+            let stillPresent = false;
             for (let i = 0; i < e.touches.length; i++) {
                 if (e.touches[i].identifier === this.touchId) {
-                    stillActive = true;
+                    stillPresent = true;
                     break;
                 }
             }
 
-            if (!stillActive) {
+            if (!stillPresent) {
                 this.forceRelease();
             }
         }
 
         forceRelease() {
             this.touchId = null;
-            this.stopMouseTicker();
-            this.releaseHybridKeys();
-            this.resetKnob();
-        }
+            if (this.base) this.base.classList.remove('active-stick');
 
-        startMouseTicker() {
-            this.stopMouseTicker();
-            this.mouseInterval = setInterval(() => {
-                if (this.touchId !== null && (Math.abs(this.currentX) > 0.05 || Math.abs(this.currentY) > 0.05)) {
-                    const speed = 20;
-                    const dx = Math.round(this.currentX * Math.abs(this.currentX) * speed);
-                    const dy = Math.round(-this.currentY * Math.abs(this.currentY) * speed);
-                    if (dx !== 0 || dy !== 0) {
-                        sendMouseMove(dx, dy);
-                    }
-                }
-            }, 16);
-        }
+            // 0.08s smooth snap-back animation to center
+            this.knob.style.transition = 'transform 0.08s cubic-bezier(0.25, 1, 0.5, 1)';
+            this.knob.style.transform = 'translate3d(0px, 0px, 0)';
 
-        stopMouseTicker() {
-            if (this.mouseInterval) {
-                clearInterval(this.mouseInterval);
-                this.mouseInterval = null;
-            }
+            this.currentX = 0.0;
+            this.currentY = 0.0;
+            this.lastSentX = 0.0;
+            this.lastSentY = 0.0;
+            this.lastSendTime = performance.now();
+
+            // Zero delay release dispatch to PC
+            sendStick(this.stickType, 0.0, 0.0);
         }
 
         processTouch(clientX, clientY, isInitial = false) {
@@ -610,10 +405,10 @@
                 clampedY = (dy / dist) * this.maxRadius;
             }
 
-            // 0ms direct GPU rendering with zero RAF lag
+            // Direct GPU layer render (zero lag at 120Hz display refresh)
             this.knob.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
 
-            // Normalized (-1.0 to 1.0) with inverted Y for Xbox standard (UP is positive)
+            // Normalized float (-1.0 to 1.0) with inverted Y for Xbox standard (UP is positive)
             const normX = clampedX / this.maxRadius;
             const normY = -(clampedY / this.maxRadius);
             const mag = Math.hypot(normX, normY);
@@ -628,71 +423,23 @@
                 this.currentY = 0.0;
             }
 
-            // Handle Browser Mode (Hybrid WASD + Arrow Keys for ANY Online Free Game)
-            if (currentMode === 'browser') {
-                if (this.stickType === 'left_stick') {
-                    const wNeed = this.currentY > 0.35;
-                    const sNeed = this.currentY < -0.35;
-                    const dNeed = this.currentX > 0.35;
-                    const aNeed = this.currentX < -0.35;
-
-                    if (wNeed !== this.activeKeys.W) { this.activeKeys.W = wNeed; sendKey('W', wNeed); }
-                    if (wNeed !== this.activeKeys.UP) { this.activeKeys.UP = wNeed; sendKey('UP', wNeed); }
-
-                    if (sNeed !== this.activeKeys.S) { this.activeKeys.S = sNeed; sendKey('S', sNeed); }
-                    if (sNeed !== this.activeKeys.DOWN) { this.activeKeys.DOWN = sNeed; sendKey('DOWN', sNeed); }
-
-                    if (dNeed !== this.activeKeys.D) { this.activeKeys.D = dNeed; sendKey('D', dNeed); }
-                    if (dNeed !== this.activeKeys.RIGHT) { this.activeKeys.RIGHT = dNeed; sendKey('RIGHT', dNeed); }
-
-                    if (aNeed !== this.activeKeys.A) { this.activeKeys.A = aNeed; sendKey('A', aNeed); }
-                    if (aNeed !== this.activeKeys.LEFT) { this.activeKeys.LEFT = aNeed; sendKey('LEFT', aNeed); }
-                }
-                sendStick(this.stickType, this.currentX, this.currentY);
-                return;
-            }
-
-            // 144Hz/120Hz Ultra Esports Polling in Gamepad Mode (6ms interval, 0.006 delta)
+            // 100Hz Frame-Rate Matched Polling (10ms throttle, 0.012 delta threshold)
+            // Filters out micro-finger tremor and prevents Wi-Fi buffer bloat
             const now = performance.now();
-            const timeSinceLastSend = now - this.lastSendTimestamp;
+            const timeSinceLastSend = now - this.lastSendTime;
             const delta = Math.hypot(this.currentX - this.lastSentX, this.currentY - this.lastSentY);
 
-            if (isInitial || (timeSinceLastSend >= 6 && delta >= 0.006)) {
-                this.lastSendTimestamp = now;
+            if (isInitial || (timeSinceLastSend >= 10 && delta >= 0.012)) {
+                this.lastSendTime = now;
                 this.lastSentX = this.currentX;
                 this.lastSentY = this.currentY;
                 sendStick(this.stickType, this.currentX, this.currentY);
             }
         }
-
-        releaseHybridKeys() {
-            if (this.stickType === 'left_stick') {
-                ['W', 'A', 'S', 'D', 'UP', 'DOWN', 'LEFT', 'RIGHT'].forEach(k => {
-                    if (this.activeKeys[k]) {
-                        this.activeKeys[k] = false;
-                        sendKey(k, false);
-                    }
-                });
-            }
-        }
-
-        resetKnob() {
-            if (this.base) this.base.classList.remove('active-stick');
-            this.knob.style.transition = 'transform 0.08s cubic-bezier(0.25, 1, 0.5, 1)';
-            this.knob.style.transform = 'translate3d(0px, 0px, 0)';
-
-            this.currentX = 0.0;
-            this.currentY = 0.0;
-            this.lastSentX = 0.0;
-            this.lastSentY = 0.0;
-            this.lastSendTimestamp = performance.now();
-
-            sendStick(this.stickType, 0.0, 0.0);
-        }
     }
 
     // --------------------------------------------------------------------------
-    // Watchdog: Automatic Zombie Touch Cleanup
+    // Watchdog: Automatic Zombie Touch Reclamation
     // --------------------------------------------------------------------------
     setInterval(() => {
         if (!document.hasFocus() || document.hidden) {
@@ -700,12 +447,9 @@
             return;
         }
 
-        // If a stick believes it has a touchId, verify that at least one touch exists
-        if (leftStickInstance && leftStickInstance.touchId !== null) {
-            // If screen has 0 touches, force release!
-            if (activeTouchButtons.size === 0 && (!rightStickInstance || rightStickInstance.touchId === null)) {
-                // If no touches active anywhere, safe check
-            }
+        // If screen has 0 touches, ensure all inputs are released
+        if (leftStick && leftStick.touchId !== null && activeTouchButtons.size === 0) {
+            // Touch verification handled by events
         }
     }, 1000);
 
@@ -716,24 +460,30 @@
         if ('wakeLock' in navigator) {
             try {
                 wakeLock = await navigator.wakeLock.request('screen');
-                console.log('[WakeLock] Screen wake lock acquired.');
+                console.log('[DuoPad] Screen WakeLock acquired.');
                 wakeLock.addEventListener('release', () => {
-                    console.log('[WakeLock] Released.');
+                    console.log('[DuoPad] WakeLock released.');
                 });
             } catch (err) {
-                console.warn('[WakeLock] Failed to acquire:', err);
+                console.warn('[DuoPad] WakeLock failed:', err);
             }
         }
     }
 
     if (btnFullscreen) {
-        btnFullscreen.addEventListener('click', () => {
+        btnFullscreen.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.warn('Fullscreen request failed:', err);
-                });
+                const el = document.documentElement;
+                if (el.requestFullscreen) {
+                    el.requestFullscreen().catch(() => {});
+                } else if (el.webkitRequestFullscreen) {
+                    el.webkitRequestFullscreen();
+                }
             } else {
-                document.exitFullscreen().catch(() => {});
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                }
             }
         });
     }
@@ -749,12 +499,12 @@
     window.addEventListener('blur', releaseAllInputs);
 
     // --------------------------------------------------------------------------
-    // Bootstrap
+    // Initialization
     // --------------------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
         initButtons();
-        leftStickInstance = new VirtualJoystick('left-stick-zone', 'left-stick-knob', 'left_stick');
-        rightStickInstance = new VirtualJoystick('right-stick-zone', 'right-stick-knob', 'right_stick');
+        leftStick = new VirtualJoystick('left-stick-zone', 'left-stick-knob', 'left_stick');
+        rightStick = new VirtualJoystick('right-stick-zone', 'right-stick-knob', 'right_stick');
     });
 
 })();

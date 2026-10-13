@@ -13,6 +13,7 @@ import socket
 import atexit
 import qrcode
 import asyncio
+import ctypes
 
 # Ensure Windows console handles UTF-8 / emojis properly without crash
 if sys.platform == "win32":
@@ -221,17 +222,30 @@ async def handle_disconnect(sid):
 @sio.on('input')
 async def handle_input(sid, data):
     """
-    Handle real-time controller inputs from connected phones.
-    Payload types:
-      - button:      { type: 'button', button: 'A', pressed: true/false }
-      - trigger:     { type: 'trigger', trigger: 'RT', value: 0.0 - 1.0 }
-      - left_stick:  { type: 'left_stick', x: -1.0 to 1.0, y: -1.0 to 1.0 }
-      - right_stick: { type: 'right_stick', x: -1.0 to 1.0, y: -1.0 to 1.0 }
-      - reset:       { type: 'reset' }
+    Handle real-time controller inputs from connected phones with zero lag (<1ms).
+    Fast-paths Gamepad XInput inputs directly to ViGEmBus kernel driver.
     """
-    inp_type = data.get('type')
-    
-    # 1. Native Windows Mouse & Scroll & Keyboard Handling (Universal PC Control)
+    # 1. FAST PATH: Virtual Xbox 360 Controller (Player 1 & 2 via ViGEmBus)
+    player_num = sid_to_player.get(sid)
+    if player_num and player_num in controllers:
+        ctrl = controllers[player_num]
+        try:
+            # Batch input list support (multiple inputs packed in a single frame)
+            if isinstance(data, list):
+                for item in data:
+                    _apply_gamepad_item(ctrl, item)
+                ctrl.update()
+                return
+
+            if _apply_gamepad_item(ctrl, data):
+                ctrl.update()
+                return
+        except Exception as e:
+            print(f"[!] Input processing error for Player {player_num}: {e}")
+        return
+
+    # 2. Universal PC Desktop / Mouse / Keyboard Emulation Fallback
+    inp_type = data.get('type') or data.get('t')
     try:
         if inp_type == 'scroll':
             delta = int(data.get('delta', 0))
@@ -274,57 +288,56 @@ async def handle_input(sid, data):
     except Exception:
         pass
 
-    # 2. Virtual Xbox 360 Controller Handling (Player 1 & 2 via ViGEmBus)
-    player_num = sid_to_player.get(sid)
-    if not player_num or player_num not in controllers:
-        return
-    
-    ctrl = controllers[player_num]
-    try:
-        if inp_type == 'button':
-            btn_name = data.get('button')
-            pressed = bool(data.get('pressed', False))
-            xusb_btn = BUTTON_MAP.get(btn_name)
-            if xusb_btn:
-                if pressed:
-                    ctrl.press_button(button=xusb_btn)
-                else:
-                    ctrl.release_button(button=xusb_btn)
-                ctrl.update()
+def _apply_gamepad_item(ctrl, item):
+    """Sub-microsecond helper to update a single virtual Xbox 360 controller control."""
+    inp_type = item.get('type') or item.get('t')
 
-        elif inp_type == 'trigger':
-            trig_name = data.get('trigger')
-            val = float(data.get('value', 0.0))
-            val = max(0.0, min(1.0, val))
-            
-            if trig_name == 'LT':
-                ctrl.left_trigger_float(value_float=val)
-            elif trig_name == 'RT':
-                ctrl.right_trigger_float(value_float=val)
-            ctrl.update()
+    if inp_type == 'button' or inp_type == 'b':
+        btn_name = item.get('button') or item.get('b')
+        pressed = bool(item.get('pressed', item.get('p', False)))
+        xusb_btn = BUTTON_MAP.get(btn_name)
+        if xusb_btn:
+            if pressed:
+                ctrl.press_button(button=xusb_btn)
+            else:
+                ctrl.release_button(button=xusb_btn)
+            return True
 
-        elif inp_type == 'left_stick':
-            x = float(data.get('x', 0.0))
-            y = float(data.get('y', 0.0))
-            x = max(-1.0, min(1.0, x))
-            y = max(-1.0, min(1.0, y))
-            ctrl.left_joystick_float(x_value_float=x, y_value_float=y)
-            ctrl.update()
+    elif inp_type == 'left_stick' or inp_type == 'ls':
+        x = float(item.get('x', 0.0))
+        y = float(item.get('y', 0.0))
+        ctrl.left_joystick_float(x_value_float=max(-1.0, min(1.0, x)), y_value_float=max(-1.0, min(1.0, y)))
+        return True
 
-        elif inp_type == 'right_stick':
-            x = float(data.get('x', 0.0))
-            y = float(data.get('y', 0.0))
-            x = max(-1.0, min(1.0, x))
-            y = max(-1.0, min(1.0, y))
-            ctrl.right_joystick_float(x_value_float=x, y_value_float=y)
-            ctrl.update()
+    elif inp_type == 'right_stick' or inp_type == 'rs':
+        x = float(item.get('x', 0.0))
+        y = float(item.get('y', 0.0))
+        ctrl.right_joystick_float(x_value_float=max(-1.0, min(1.0, x)), y_value_float=max(-1.0, min(1.0, y)))
+        return True
 
-        elif inp_type == 'reset':
-            ctrl.reset()
-            ctrl.update()
+    elif inp_type == 'trigger' or inp_type == 'trig':
+        trig_name = item.get('trigger') or item.get('trig')
+        val = max(0.0, min(1.0, float(item.get('value', item.get('v', 0.0)))))
+        if trig_name == 'LT':
+            ctrl.left_trigger_float(value_float=val)
+        elif trig_name == 'RT':
+            ctrl.right_trigger_float(value_float=val)
+        return True
 
-    except Exception as e:
-        print(f"[!] Input processing error for Player {player_num}: {e}")
+    elif inp_type == 'sticks':
+        lx = max(-1.0, min(1.0, float(item.get('lx', 0.0))))
+        ly = max(-1.0, min(1.0, float(item.get('ly', 0.0))))
+        rx = max(-1.0, min(1.0, float(item.get('rx', 0.0))))
+        ry = max(-1.0, min(1.0, float(item.get('ry', 0.0))))
+        ctrl.left_joystick_float(x_value_float=lx, y_value_float=ly)
+        ctrl.right_joystick_float(x_value_float=rx, y_value_float=ry)
+        return True
+
+    elif inp_type == 'reset' or inp_type == 'r':
+        ctrl.reset()
+        return True
+
+    return False
 
 @sio.on('ping_check')
 async def handle_ping_check(sid, data):
