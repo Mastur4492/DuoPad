@@ -3,7 +3,8 @@
 DuoPad - Desktop Gamepad Hub
 Native Windows GUI Application for the DuoPad Dual Phone Controller Server.
 Connects up to two smartphones over local Wi-Fi/Hotspot/USB into high-performance
-virtual Xbox 360 controllers on Windows via ViGEmBus and vgamepad.
+persistent virtual Xbox 360 controllers on Windows via ViGEmBus and vgamepad.
+100% Free and Open Source for the Gaming Industry.
 """
 
 import os
@@ -37,6 +38,7 @@ sys.excepthook = _global_exception_handler
 
 import tkinter as tk
 from tkinter import ttk, messagebox
+
 # Explicitly block Pillow C-extensions from being imported by qrcode
 sys.modules['PIL'] = None
 sys.modules['PIL.Image'] = None
@@ -51,12 +53,11 @@ if sys.platform == "win32":
         pass
     try:
         import ctypes
-        # 1. Force Windows Taskbar to display DuoPad's own icon instead of Anaconda/Python default icon
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('duopad.gamepad.server.v1.0')
     except Exception:
         pass
 
-# 2. Single-Instance Guard: Port 5001 lock socket prevents duplicate servers from stealing connections
+# Single-Instance Guard: Port 5001 lock socket prevents duplicate servers
 _lock_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     _lock_socket.bind(('127.0.0.1', 5001))
@@ -81,7 +82,12 @@ import vgamepad as vg
 # ---------------------------------------------------------------------------
 # Server Logic & State
 # ---------------------------------------------------------------------------
-sio = socketio.AsyncServer(async_mode='aiohttp', cors_allowed_origins='*', ping_timeout=10, ping_interval=5)
+sio = socketio.AsyncServer(
+    async_mode='aiohttp',
+    cors_allowed_origins='*',
+    ping_timeout=10,
+    ping_interval=5
+)
 app = web.Application()
 sio.attach(app)
 
@@ -96,6 +102,8 @@ STATIC_DIR = os.path.join(BASE_DIR, 'static')
 controllers = {}
 connected_players = {1: None, 2: None}
 sid_to_player = {}
+player_telemetry = {1: "Neutral", 2: "Neutral"}
+player_last_active = {1: 0.0, 2: 0.0}
 
 BUTTON_MAP = {
     'A': vg.XUSB_BUTTON.XUSB_GAMEPAD_A,
@@ -105,11 +113,9 @@ BUTTON_MAP = {
     'LB': vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER,
     'RB': vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER,
     'START': vg.XUSB_BUTTON.XUSB_GAMEPAD_START,
-    'Start': vg.XUSB_BUTTON.XUSB_GAMEPAD_START,
     'BACK': vg.XUSB_BUTTON.XUSB_GAMEPAD_BACK,
-    'Back': vg.XUSB_BUTTON.XUSB_GAMEPAD_BACK,
     'GUIDE': vg.XUSB_BUTTON.XUSB_GAMEPAD_GUIDE,
-    'Guid': vg.XUSB_BUTTON.XUSB_GAMEPAD_GUIDE,
+    'GUID': vg.XUSB_BUTTON.XUSB_GAMEPAD_GUIDE,
     'DPAD_UP': vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_UP,
     'DPAD_DOWN': vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_DOWN,
     'DPAD_LEFT': vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_LEFT,
@@ -121,7 +127,7 @@ BUTTON_MAP = {
 }
 
 # ---------------------------------------------------------------------------
-# Native Windows Mouse & Keyboard Emulation (Universal PC & Scroll Engine)
+# Native Windows Mouse & Keyboard Emulation
 # ---------------------------------------------------------------------------
 if sys.platform == "win32":
     from ctypes import wintypes
@@ -154,6 +160,37 @@ VK_MAP = {
 }
 KEYEVENTF_KEYUP = 0x0002
 
+def init_virtual_gamepads():
+    """
+    Pre-initialize persistent virtual Xbox 360 controllers on Windows.
+    This guarantees joy.cpl and games (FIFA, FC 24/25/26, Forza, GTA) detect them immediately.
+    """
+    for p_num in (1, 2):
+        if p_num in controllers:
+            continue
+        try:
+            ctrl = vg.VX360Gamepad()
+            ctrl.reset()
+            ctrl.update()
+            controllers[p_num] = ctrl
+            print(f"[DuoPad] Persistent Virtual Xbox 360 Controller #{p_num} plugged into Windows!")
+            time.sleep(0.35)  # Crucial: Allow Windows PnP bus enumeration
+        except Exception as e:
+            print(f"[DuoPad] ViGEmBus warning for Controller #{p_num}: {e}")
+
+def ensure_controller(p_num):
+    if p_num in controllers:
+        return controllers[p_num]
+    try:
+        ctrl = vg.VX360Gamepad()
+        ctrl.reset()
+        ctrl.update()
+        controllers[p_num] = ctrl
+        return ctrl
+    except Exception as e:
+        print(f"[DuoPad] Error ensuring Controller #{p_num}: {e}")
+        return None
+
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -174,17 +211,23 @@ async def handle_index(request):
 
 async def handle_status(request):
     return web.json_response({
+        'status': 'online',
         'player1_connected': connected_players[1] is not None,
         'player2_connected': connected_players[2] is not None,
         'active_controllers': len(controllers)
     })
 
+async def handle_health(request):
+    return web.Response(text="OK", content_type="text/plain")
+
 app.router.add_get('/', handle_index)
 app.router.add_get('/status', handle_status)
+app.router.add_get('/health', handle_health)
 app.router.add_static('/static', STATIC_DIR, name='static')
 
 @sio.on('connect')
 async def handle_connect(sid, environ):
+    client_ip = environ.get('REMOTE_ADDR', 'Unknown')
     assigned_player = None
     if connected_players[1] is None:
         assigned_player = 1
@@ -195,32 +238,23 @@ async def handle_connect(sid, environ):
         connected_players[assigned_player] = sid
         sid_to_player[sid] = assigned_player
         
-        # Dynamically attach virtual Xbox 360 controller on phone connection
-        if assigned_player in controllers:
-            old_ctrl = controllers.pop(assigned_player, None)
-            if old_ctrl:
-                try:
-                    old_ctrl.reset()
-                    old_ctrl.update()
-                except Exception:
-                    pass
-                del old_ctrl
-            await asyncio.sleep(0.05)
+        ctrl = ensure_controller(assigned_player)
+        if ctrl:
+            try:
+                ctrl.reset()
+                ctrl.update()
+            except Exception:
+                pass
 
-        try:
-            ctrl = vg.VX360Gamepad()
-            ctrl.reset()
-            ctrl.update()
-            controllers[assigned_player] = ctrl
-            print(f"[DuoPad] Virtual Xbox 360 Controller #{assigned_player} plugged into Windows for Player {assigned_player}!")
-        except Exception as e:
-            print(f"[DuoPad] Error attaching controller #{assigned_player}: {e}")
-
-        print(f"[DuoPad] Player {assigned_player} connected (sid={sid})")
-        await sio.emit('assigned', {'player': assigned_player, 'status': 'connected'}, to=sid)
+        print(f"[DuoPad] Player {assigned_player} connected from {client_ip} (sid={sid[:8]})")
+        await sio.emit('assigned', {
+            'player': assigned_player,
+            'status': 'connected',
+            'message': f'Connected as Player {assigned_player}'
+        }, to=sid)
     else:
-        print(f"[DuoPad] Connection rejected for {sid}: 2 players already active.")
-        await sio.emit('lobby_full', {'message': 'Both player slots are full.'}, to=sid)
+        print(f"[DuoPad] Connection rejected for {sid[:8]}: Both player slots occupied.")
+        await sio.emit('game_full', {'status': 'full', 'message': 'Both player slots are full.'}, to=sid)
         await sio.disconnect(sid)
 
 @sio.on('disconnect')
@@ -228,46 +262,44 @@ async def handle_disconnect(sid):
     if sid in sid_to_player:
         p_num = sid_to_player.pop(sid)
         connected_players[p_num] = None
+        player_telemetry[p_num] = "Disconnected"
         
-        # Dynamically detach virtual Xbox 360 controller when phone disconnects
-        ctrl = controllers.pop(p_num, None)
+        # Neutralize inputs without detaching from Windows
+        ctrl = controllers.get(p_num)
         if ctrl:
             try:
                 ctrl.reset()
                 ctrl.update()
             except Exception:
                 pass
-            del ctrl
-            print(f"[DuoPad] Virtual Xbox 360 Controller #{p_num} unplugged from Windows (Player {p_num} disconnected).")
         print(f"[DuoPad] Player {p_num} disconnected. Slot freed.")
 
 @sio.on('input')
 async def handle_input(sid, data):
     """
-    Handle real-time controller inputs from connected phones with zero lag (<1ms).
-    Fast-paths Gamepad XInput inputs directly to ViGEmBus kernel driver.
+    Handle real-time controller inputs with zero lag (<1ms).
+    Fast-paths Gamepad XInput directly to ViGEmBus kernel driver.
     """
-    # 1. FAST PATH: Virtual Xbox 360 Controller (Player 1 & 2 via ViGEmBus)
     player_num = sid_to_player.get(sid)
     if player_num and player_num in controllers:
         ctrl = controllers[player_num]
         try:
-            # Batch input list support (multiple inputs packed in a single frame)
+            player_last_active[player_num] = time.time()
             if isinstance(data, list):
                 for item in data:
-                    _apply_gamepad_item(ctrl, item)
+                    _apply_gamepad_item(ctrl, item, player_num)
                 ctrl.update()
                 return
 
-            if _apply_gamepad_item(ctrl, data):
+            if _apply_gamepad_item(ctrl, data, player_num):
                 ctrl.update()
                 return
         except Exception as e:
             print(f"[!] Input processing error for Player {player_num}: {e}")
         return
 
-    # 2. Universal PC Desktop / Mouse / Keyboard Emulation Fallback
-    inp_type = data.get('type') or data.get('t')
+    # Fallback to Desktop Mouse / Keyboard emulation
+    inp_type = str(data.get('type') or data.get('t', '')).lower()
     try:
         if inp_type == 'scroll':
             delta = int(data.get('delta', 0))
@@ -284,7 +316,7 @@ async def handle_input(sid, data):
             return
 
         elif inp_type == 'mouse_click':
-            btn = data.get('button', 'left')
+            btn = str(data.get('button', 'left')).lower()
             pressed = bool(data.get('pressed', False))
             if user32:
                 if btn == 'left':
@@ -310,14 +342,26 @@ async def handle_input(sid, data):
     except Exception:
         pass
 
-def _apply_gamepad_item(ctrl, item):
+def _apply_gamepad_item(ctrl, item, p_num=None):
     """Sub-microsecond helper to update a single virtual Xbox 360 controller control."""
-    inp_type = item.get('type') or item.get('t')
+    inp_type = str(item.get('type') or item.get('t', '')).lower()
 
-    if inp_type == 'button' or inp_type == 'b':
-        btn_name = item.get('button') or item.get('b')
+    if inp_type in ('button', 'b'):
+        btn_raw = str(item.get('button') or item.get('b', '')).upper().strip()
         pressed = bool(item.get('pressed', item.get('p', False)))
-        xusb_btn = BUTTON_MAP.get(btn_name)
+
+        if p_num:
+            player_telemetry[p_num] = f"Btn: {btn_raw}" if pressed else "Neutral"
+
+        # Handle LT / RT sent as buttons
+        if btn_raw in ('LT', 'LEFT_TRIGGER', 'L2'):
+            ctrl.left_trigger_float(value_float=1.0 if pressed else 0.0)
+            return True
+        elif btn_raw in ('RT', 'RIGHT_TRIGGER', 'R2'):
+            ctrl.right_trigger_float(value_float=1.0 if pressed else 0.0)
+            return True
+
+        xusb_btn = BUTTON_MAP.get(btn_raw)
         if xusb_btn:
             if pressed:
                 ctrl.press_button(button=xusb_btn)
@@ -325,24 +369,30 @@ def _apply_gamepad_item(ctrl, item):
                 ctrl.release_button(button=xusb_btn)
             return True
 
-    elif inp_type == 'left_stick' or inp_type == 'ls':
+    elif inp_type in ('left_stick', 'ls'):
         x = float(item.get('x', 0.0))
         y = float(item.get('y', 0.0))
+        if p_num and (abs(x) > 0.05 or abs(y) > 0.05):
+            player_telemetry[p_num] = f"LS: ({x:.2f}, {y:.2f})"
         ctrl.left_joystick_float(x_value_float=max(-1.0, min(1.0, x)), y_value_float=max(-1.0, min(1.0, y)))
         return True
 
-    elif inp_type == 'right_stick' or inp_type == 'rs':
+    elif inp_type in ('right_stick', 'rs'):
         x = float(item.get('x', 0.0))
         y = float(item.get('y', 0.0))
+        if p_num and (abs(x) > 0.05 or abs(y) > 0.05):
+            player_telemetry[p_num] = f"RS: ({x:.2f}, {y:.2f})"
         ctrl.right_joystick_float(x_value_float=max(-1.0, min(1.0, x)), y_value_float=max(-1.0, min(1.0, y)))
         return True
 
-    elif inp_type == 'trigger' or inp_type == 'trig':
-        trig_name = item.get('trigger') or item.get('trig')
+    elif inp_type in ('trigger', 'trig'):
+        trig_name = str(item.get('trigger') or item.get('trig', '')).upper().strip()
         val = max(0.0, min(1.0, float(item.get('value', item.get('v', 0.0)))))
-        if trig_name == 'LT':
+        if p_num and val > 0.05:
+            player_telemetry[p_num] = f"{trig_name}: {val:.2f}"
+        if trig_name in ('LT', 'L2', 'LEFT'):
             ctrl.left_trigger_float(value_float=val)
-        elif trig_name == 'RT':
+        elif trig_name in ('RT', 'R2', 'RIGHT'):
             ctrl.right_trigger_float(value_float=val)
         return True
 
@@ -355,22 +405,24 @@ def _apply_gamepad_item(ctrl, item):
         ctrl.right_joystick_float(x_value_float=rx, y_value_float=ry)
         return True
 
-    elif inp_type == 'reset' or inp_type == 'r':
+    elif inp_type in ('reset', 'r'):
         ctrl.reset()
+        if p_num:
+            player_telemetry[p_num] = "Neutral"
         return True
 
     return False
 
-# Backward compatibility for direct button / joystick events
+# Backward compatibility direct listeners
 @sio.on('button_down')
 async def handle_button_down(sid, data):
     p_num = sid_to_player.get(sid)
     if p_num and p_num in controllers:
-        btn = data.get('button')
+        btn = str(data.get('button', '')).upper().strip()
         ctrl = controllers[p_num]
-        if btn == 'LT':
+        if btn in ('LT', 'LEFT_TRIGGER', 'L2'):
             ctrl.left_trigger_float(value_float=1.0)
-        elif btn == 'RT':
+        elif btn in ('RT', 'RIGHT_TRIGGER', 'R2'):
             ctrl.right_trigger_float(value_float=1.0)
         elif btn in BUTTON_MAP:
             ctrl.press_button(button=BUTTON_MAP[btn])
@@ -380,11 +432,11 @@ async def handle_button_down(sid, data):
 async def handle_button_up(sid, data):
     p_num = sid_to_player.get(sid)
     if p_num and p_num in controllers:
-        btn = data.get('button')
+        btn = str(data.get('button', '')).upper().strip()
         ctrl = controllers[p_num]
-        if btn == 'LT':
+        if btn in ('LT', 'LEFT_TRIGGER', 'L2'):
             ctrl.left_trigger_float(value_float=0.0)
-        elif btn == 'RT':
+        elif btn in ('RT', 'RIGHT_TRIGGER', 'R2'):
             ctrl.right_trigger_float(value_float=0.0)
         elif btn in BUTTON_MAP:
             ctrl.release_button(button=BUTTON_MAP[btn])
@@ -394,36 +446,36 @@ async def handle_button_up(sid, data):
 async def handle_joystick_move(sid, data):
     p_num = sid_to_player.get(sid)
     if p_num and p_num in controllers:
-        stick = data.get('stick')
+        stick = str(data.get('stick', '')).lower()
         x = max(-1.0, min(1.0, float(data.get('x', 0.0))))
         y = max(-1.0, min(1.0, float(data.get('y', 0.0))))
         ctrl = controllers[p_num]
-        if stick == 'left':
+        if stick in ('left', 'left_stick', 'ls'):
             ctrl.left_joystick_float(x_value_float=x, y_value_float=y)
-        elif stick == 'right':
+        elif stick in ('right', 'right_stick', 'rs'):
             ctrl.right_joystick_float(x_value_float=x, y_value_float=y)
         ctrl.update()
 
 @sio.on('ping_check')
 async def handle_ping_check(sid, data):
-    """Echo back timestamp for real-time latency calculation in phone HUD."""
     await sio.emit('pong_check', data, to=sid)
 
 def run_server_thread():
+    init_virtual_gamepads()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     runner = web.AppRunner(app)
     loop.run_until_complete(runner.setup())
     
     bound = False
-    for attempt in range(6):
+    for attempt in range(8):
         try:
             site = web.TCPSite(runner, '0.0.0.0', 5000, reuse_address=True)
             loop.run_until_complete(site.start())
             bound = True
             break
         except Exception:
-            time.sleep(0.8)
+            time.sleep(0.5)
 
     if bound:
         loop.run_forever()
@@ -435,7 +487,7 @@ class DuoPadHubApp:
     def __init__(self, root):
         self.root = root
         self.root.title("DuoPad - Smartphone Gamepad Server")
-        self.root.geometry("550x600")
+        self.root.geometry("560x620")
         self.root.resizable(False, False)
         self.root.configure(bg="#050a12")
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -471,7 +523,7 @@ class DuoPadHubApp:
     def setup_ui(self):
         # Header Banner with App Logo
         header_frame = tk.Frame(self.root, bg="#050a12")
-        header_frame.pack(pady=(14, 4))
+        header_frame.pack(pady=(12, 4))
 
         png_file = os.path.join(BASE_DIR, 'duopad_icon.png')
         if os.path.exists(png_file):
@@ -492,7 +544,7 @@ class DuoPadHubApp:
         lbl_header.pack(anchor="w")
 
         lbl_sub = tk.Label(
-            titles_frame, text="Zero-Latency Dual Smartphone Controller for PC",
+            titles_frame, text="Zero-Latency Dual Smartphone Controller for PC (Free)",
             font=("Segoe UI", 9), fg="#94a3b8", bg="#050a12", anchor="w"
         )
         lbl_sub.pack(anchor="w")
@@ -503,10 +555,10 @@ class DuoPadHubApp:
             font=("Segoe UI", 10, "bold"), fg="#10b981", bg="#0b1726",
             padx=16, pady=5, relief="ridge", bd=1
         )
-        self.lbl_server_status.pack(pady=(0, 10))
+        self.lbl_server_status.pack(pady=(0, 8))
 
         # QR Code Card
-        qr_card = tk.Frame(self.root, bg="#0b1726", bd=2, relief="groove", padx=14, pady=12)
+        qr_card = tk.Frame(self.root, bg="#0b1726", bd=2, relief="groove", padx=12, pady=10)
         qr_card.pack(pady=2)
 
         qr = qrcode.QRCode(box_size=5, border=2)
@@ -533,36 +585,40 @@ class DuoPadHubApp:
             qr_card, text="📱 Scan with Phone Camera to Connect Gamepad",
             font=("Segoe UI", 9, "bold"), fg="#e2e8f0", bg="#0b1726"
         )
-        lbl_scan.pack(pady=(8, 0))
+        lbl_scan.pack(pady=(6, 0))
 
-        # Live Player Status Boxes
+        # Live Player Status Boxes with Input Telemetry
         frame_players = tk.Frame(self.root, bg="#050a12")
-        frame_players.pack(fill="x", padx=36, pady=10)
+        frame_players.pack(fill="x", padx=32, pady=8)
 
         # Player 1 Box (Cyan)
-        self.card_p1 = tk.Frame(frame_players, bg="#081422", bd=1, relief="solid", padx=12, pady=8)
-        self.card_p1.pack(side="left", expand=True, fill="both", padx=(0, 6))
-        tk.Label(self.card_p1, text="PLAYER 1", font=("Segoe UI", 10, "bold"), fg="#00f0ff", bg="#081422").pack()
+        self.card_p1 = tk.Frame(frame_players, bg="#081422", bd=1, relief="solid", padx=10, pady=6)
+        self.card_p1.pack(side="left", expand=True, fill="both", padx=(0, 5))
+        tk.Label(self.card_p1, text="PLAYER 1 (Cyan)", font=("Segoe UI", 10, "bold"), fg="#00f0ff", bg="#081422").pack()
         self.lbl_p1_status = tk.Label(self.card_p1, text="⚪ Waiting for Phone 1...", font=("Segoe UI", 9), fg="#94a3b8", bg="#081422")
-        self.lbl_p1_status.pack(pady=(3, 0))
+        self.lbl_p1_status.pack(pady=(2, 0))
+        self.lbl_p1_input = tk.Label(self.card_p1, text="Active: Xbox 360 #1", font=("Segoe UI", 8), fg="#38bdf8", bg="#081422")
+        self.lbl_p1_input.pack(pady=(1, 0))
 
         # Player 2 Box (Magenta)
-        self.card_p2 = tk.Frame(frame_players, bg="#081422", bd=1, relief="solid", padx=12, pady=8)
-        self.card_p2.pack(side="right", expand=True, fill="both", padx=(6, 0))
-        tk.Label(self.card_p2, text="PLAYER 2", font=("Segoe UI", 10, "bold"), fg="#ff007f", bg="#081422").pack()
+        self.card_p2 = tk.Frame(frame_players, bg="#081422", bd=1, relief="solid", padx=10, pady=6)
+        self.card_p2.pack(side="right", expand=True, fill="both", padx=(5, 0))
+        tk.Label(self.card_p2, text="PLAYER 2 (Magenta)", font=("Segoe UI", 10, "bold"), fg="#ff007f", bg="#081422").pack()
         self.lbl_p2_status = tk.Label(self.card_p2, text="⚪ Waiting for Phone 2...", font=("Segoe UI", 9), fg="#94a3b8", bg="#081422")
-        self.lbl_p2_status.pack(pady=(3, 0))
+        self.lbl_p2_status.pack(pady=(2, 0))
+        self.lbl_p2_input = tk.Label(self.card_p2, text="Active: Xbox 360 #2", font=("Segoe UI", 8), fg="#f43f5e", bg="#081422")
+        self.lbl_p2_input.pack(pady=(1, 0))
 
-        # Warning / Info Notice Box (Keep Open in Background)
+        # Warning / Info Notice Box
         warn_box = tk.Frame(
             self.root, bg="#1a1306", bd=1, relief="solid",
-            highlightbackground="#f59e0b", highlightthickness=1, padx=14, pady=8
+            highlightbackground="#f59e0b", highlightthickness=1, padx=12, pady=6
         )
-        warn_box.pack(fill="x", padx=36, pady=(4, 8))
+        warn_box.pack(fill="x", padx=32, pady=(2, 6))
 
         lbl_warn_title = tk.Label(
             warn_box,
-            text="⚠️  WARNING: KEEP THIS APP OPEN IN BACKGROUND WHILE PLAYING",
+            text="🎮 BOTH VIRTUAL XBOX 360 GAMEPADS ARE READY IN WINDOWS",
             font=("Segoe UI", 9, "bold"),
             fg="#fbbf24",
             bg="#1a1306"
@@ -571,59 +627,72 @@ class DuoPadHubApp:
 
         lbl_warn_desc = tk.Label(
             warn_box,
-            text="Do NOT close this window during games (you can minimize it).\nClosing this app stops the server and disconnects your virtual gamepads.",
+            text="Launch EA Sports FC, FIFA, Forza or GTA V anytime. Keep this app open in background.\nMinimize to taskbar while playing.",
             font=("Segoe UI", 8),
             fg="#fef3c7",
             bg="#1a1306",
             justify="left"
         )
-        lbl_warn_desc.pack(anchor="w", pady=(2, 0))
+        lbl_warn_desc.pack(anchor="w", pady=(1, 0))
 
         # Action Buttons
         frame_actions = tk.Frame(self.root, bg="#050a12")
-        frame_actions.pack(pady=6)
+        frame_actions.pack(pady=4)
 
         btn_joy = tk.Button(
             frame_actions, text="🎮 Test Gamepads (joy.cpl)", font=("Segoe UI", 9, "bold"),
-            bg="#0284c7", fg="#ffffff", padx=14, pady=6, bd=0, cursor="hand2",
+            bg="#0284c7", fg="#ffffff", padx=14, pady=5, bd=0, cursor="hand2",
             command=self.open_joy_cpl
         )
-        btn_joy.pack(side="left", padx=6)
+        btn_joy.pack(side="left", padx=5)
 
         btn_browser = tk.Button(
             frame_actions, text="🌐 Open Controller Link", font=("Segoe UI", 9),
-            bg="#1e293b", fg="#cbd5e1", padx=12, pady=6, bd=0, cursor="hand2",
+            bg="#1e293b", fg="#cbd5e1", padx=12, pady=5, bd=0, cursor="hand2",
             command=self.open_in_browser
         )
-        btn_browser.pack(side="left", padx=6)
+        btn_browser.pack(side="left", padx=5)
 
         # Footer
         lbl_foot = tk.Label(
             self.root, text="DuoPad v1.0 • 100% Free & Open Source for Gamers • Leave open while playing",
             font=("Segoe UI", 8), fg="#64748b", bg="#050a12"
         )
-        lbl_foot.pack(pady=(8, 12))
+        lbl_foot.pack(pady=(6, 8))
 
     def start_server_background(self):
         t = threading.Thread(target=run_server_thread, daemon=True)
         t.start()
 
     def poll_player_status(self):
+        now = time.time()
+        # Player 1 Status & Telemetry
         if connected_players[1] is not None:
-            self.lbl_p1_status.config(text="🟢 CONNECTED (Active)", fg="#10b981")
+            active_str = player_telemetry.get(1, "Neutral")
+            is_recent = (now - player_last_active.get(1, 0)) < 1.0
+            live_tag = " [INPUT ACTIVE]" if (is_recent and active_str != "Neutral") else ""
+            self.lbl_p1_status.config(text=f"🟢 CONNECTED{live_tag}", fg="#10b981")
+            self.lbl_p1_input.config(text=f"Live: {active_str}", fg="#38bdf8")
             self.card_p1.config(highlightbackground="#00f0ff", highlightcolor="#00f0ff", highlightthickness=2)
         else:
             self.lbl_p1_status.config(text="⚪ Waiting for Phone 1...", fg="#94a3b8")
+            self.lbl_p1_input.config(text="Virtual Xbox 360 #1: Ready", fg="#64748b")
             self.card_p1.config(highlightthickness=0)
 
+        # Player 2 Status & Telemetry
         if connected_players[2] is not None:
-            self.lbl_p2_status.config(text="🟢 CONNECTED (Active)", fg="#10b981")
+            active_str = player_telemetry.get(2, "Neutral")
+            is_recent = (now - player_last_active.get(2, 0)) < 1.0
+            live_tag = " [INPUT ACTIVE]" if (is_recent and active_str != "Neutral") else ""
+            self.lbl_p2_status.config(text=f"🟢 CONNECTED{live_tag}", fg="#10b981")
+            self.lbl_p2_input.config(text=f"Live: {active_str}", fg="#f43f5e")
             self.card_p2.config(highlightbackground="#ff007f", highlightcolor="#ff007f", highlightthickness=2)
         else:
             self.lbl_p2_status.config(text="⚪ Waiting for Phone 2...", fg="#94a3b8")
+            self.lbl_p2_input.config(text="Virtual Xbox 360 #2: Ready", fg="#64748b")
             self.card_p2.config(highlightthickness=0)
 
-        self.root.after(400, self.poll_player_status)
+        self.root.after(200, self.poll_player_status)
 
     def open_joy_cpl(self):
         try:

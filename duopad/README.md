@@ -57,8 +57,8 @@ An original Xbox or PS5 controller costs **$50 - $70 (₹4,000 - ₹6,000)**, an
 ### 2. Installation
 1. Clone or download this repository:
    ```bash
-   git clone https://github.com/your-username/duopad.git
-   cd duopad
+   git clone https://github.com/Mastur4492/DuoPad.git
+   cd DuoPad/duopad
    ```
 2. Run the automated installer:
    ```cmd

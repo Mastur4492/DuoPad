@@ -1,20 +1,20 @@
 @echo off
+title DuoPad - Windows Firewall Configuration
 echo ============================================================
-echo   Fixing Windows Firewall for FC 26 Phone Controller
+echo   DuoPad - Windows Firewall Configuration for Phone Gamepad
 echo ============================================================
 echo.
-echo 1. Removing block rules for Python...
-netsh advfirewall firewall delete rule name="python.exe" dir=in action=block
+echo [*] Adding Inbound Allow Rule for DuoPad on Port 5000...
+netsh advfirewall firewall delete rule name="DuoPad Server" >nul 2>&1
+netsh advfirewall firewall add rule name="DuoPad Server" dir=in action=allow protocol=TCP localport=5000 profile=any >nul 2>&1
 
-echo 2. Adding Inbound Allow Rule for Port 5000...
-netsh advfirewall firewall add rule name="FC26 Controller Server" dir=in action=allow protocol=TCP localport=5000 profile=any
-
-echo 3. Switching Wi-Fi network profile to Private...
-powershell -NoProfile -Command "Set-NetConnectionProfile -Name 'GM' -NetworkCategory Private"
+echo [*] Ensuring Wi-Fi network category allows local LAN connections...
+powershell -NoProfile -Command "Get-NetConnectionProfile | Where-Object { $_.NetworkCategory -eq 'Public' } | Set-NetConnectionProfile -NetworkCategory Private -ErrorAction SilentlyContinue" >nul 2>&1
 
 echo.
 echo ============================================================
-echo   SUCCESS! Firewall has been configured.
-echo   Now your phone will be able to load http://192.168.0.101:5000
+echo   [+] SUCCESS! Windows Firewall is now optimized for DuoPad.
+echo   Your phone will connect instantly over local Wi-Fi / Hotspot!
 echo ============================================================
+echo.
 pause

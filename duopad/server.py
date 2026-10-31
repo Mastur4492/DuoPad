@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-EA SPORTS FC 26 - Dual Phone Controller Server
-Connects two Android phones over local Wi-Fi to control two separate
+DuoPad - Ultra-Low Latency Dual Phone Gamepad Server
+Connects up to two smartphones over local Wi-Fi to control two separate
 persistent virtual Xbox 360 controllers on Windows via ViGEmBus and vgamepad.
-Uses high-performance aiohttp + python-socketio for ultra-low WebSocket latency (<2ms).
+Uses high-performance aiohttp + python-socketio for sub-millisecond WebSocket latency.
+100% Free and Open Source for the Gaming Industry.
 """
 
 import os
@@ -11,7 +12,6 @@ import sys
 import time
 import socket
 import atexit
-import qrcode
 import asyncio
 import ctypes
 
@@ -23,6 +23,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+import qrcode
 from aiohttp import web
 import socketio
 import vgamepad as vg
@@ -50,7 +51,7 @@ controllers = {}
 connected_players = {1: None, 2: None}  # maps player_number (1, 2) -> sid
 sid_to_player = {}                      # maps sid -> player_number
 
-# XUSB Button mappings
+# Normalized XUSB Button mappings
 BUTTON_MAP = {
     'A': vg.XUSB_BUTTON.XUSB_GAMEPAD_A,
     'B': vg.XUSB_BUTTON.XUSB_GAMEPAD_B,
@@ -59,11 +60,9 @@ BUTTON_MAP = {
     'LB': vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER,
     'RB': vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER,
     'START': vg.XUSB_BUTTON.XUSB_GAMEPAD_START,
-    'Start': vg.XUSB_BUTTON.XUSB_GAMEPAD_START,
     'BACK': vg.XUSB_BUTTON.XUSB_GAMEPAD_BACK,
-    'Back': vg.XUSB_BUTTON.XUSB_GAMEPAD_BACK,
     'GUIDE': vg.XUSB_BUTTON.XUSB_GAMEPAD_GUIDE,
-    'Guid': vg.XUSB_BUTTON.XUSB_GAMEPAD_GUIDE,
+    'GUID': vg.XUSB_BUTTON.XUSB_GAMEPAD_GUIDE,
     'DPAD_UP': vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_UP,
     'DPAD_DOWN': vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_DOWN,
     'DPAD_LEFT': vg.XUSB_BUTTON.XUSB_GAMEPAD_DPAD_LEFT,
@@ -75,7 +74,8 @@ BUTTON_MAP = {
 }
 
 # ---------------------------------------------------------------------------
-# Native Windows Mouse & Keyboard Emulation (Universal PC & Scroll Engine)
+# Native Windows Mouse & Keyboard Emulation (Universal PC Desktop Control)
+# ---------------------------------------------------------------------------
 if sys.platform == "win32":
     from ctypes import wintypes
     user32 = ctypes.windll.user32
@@ -107,9 +107,44 @@ VK_MAP = {
 }
 KEYEVENTF_KEYUP = 0x0002
 
+def init_virtual_gamepads():
+    """
+    Initialize persistent virtual Xbox 360 controllers on Windows.
+    Controllers remain persistently connected to Windows so games (EA Sports FC 24/25/26,
+    FIFA, GTA V, Forza) never lose the controller or pause when phones reconnect.
+    """
+    print("[*] Initializing persistent virtual Xbox 360 controllers on Windows...")
+    for p_num in (1, 2):
+        if p_num in controllers:
+            continue
+        try:
+            ctrl = vg.VX360Gamepad()
+            ctrl.reset()
+            ctrl.update()
+            controllers[p_num] = ctrl
+            print(f"🎮 [ViGEmBus] Virtual Xbox 360 Controller #{p_num} plugged into Windows (Slot {p_num})!")
+            time.sleep(0.35)  # Required for Windows PnP kernel bus enumeration
+        except Exception as e:
+            print(f"❌ [ViGEmBus] Failed to initialize Controller #{p_num}: {e}")
+
+def ensure_controller(p_num):
+    """Ensure a virtual controller exists for player p_num."""
+    if p_num in controllers:
+        return controllers[p_num]
+    try:
+        ctrl = vg.VX360Gamepad()
+        ctrl.reset()
+        ctrl.update()
+        controllers[p_num] = ctrl
+        print(f"🎮 [ViGEmBus] Virtual Xbox 360 Controller #{p_num} plugged into Windows!")
+        return ctrl
+    except Exception as e:
+        print(f"❌ [ViGEmBus] Error ensuring Controller #{p_num}: {e}")
+        return None
+
 def cleanup_controllers():
     """Detach all connected controllers on server shutdown."""
-    print("\n[*] Server stopping. Detaching controllers...")
+    print("\n[*] Server stopping. Detaching controllers from Windows...")
     for pid, ctrl in list(controllers.items()):
         try:
             ctrl.reset()
@@ -146,14 +181,19 @@ async def handle_index(request):
 
 async def handle_status(request):
     return web.json_response({
+        'status': 'online',
         'player1_connected': connected_players[1] is not None,
         'player2_connected': connected_players[2] is not None,
-        'controllers_initialized': len(controllers) == 2
+        'controllers_initialized': len(controllers),
+        'active_controllers': list(controllers.keys())
     })
 
-# Register HTTP routes and static directory
+async def handle_health(request):
+    return web.Response(text="OK", content_type="text/plain")
+
 app.router.add_get('/', handle_index)
 app.router.add_get('/status', handle_status)
+app.router.add_get('/health', handle_health)
 app.router.add_static('/static', STATIC_DIR, name='static')
 
 # ---------------------------------------------------------------------------
@@ -173,15 +213,14 @@ async def handle_connect(sid, environ):
         connected_players[assigned_player] = sid
         sid_to_player[sid] = assigned_player
         
-        # Dynamically attach virtual Xbox controller
-        try:
-            ctrl = vg.VX360Gamepad()
-            ctrl.reset()
-            ctrl.update()
-            controllers[assigned_player] = ctrl
-            print(f"🎮 [ViGEmBus] Virtual Xbox 360 Controller #{assigned_player} plugged into Windows!")
-        except Exception as e:
-            print(f"❌ [ViGEmBus] Error attaching controller #{assigned_player}: {e}")
+        # Ensure the persistent virtual controller is active
+        ctrl = ensure_controller(assigned_player)
+        if ctrl:
+            try:
+                ctrl.reset()
+                ctrl.update()
+            except Exception:
+                pass
         
         await sio.emit('assigned', {
             'status': 'connected',
@@ -197,7 +236,7 @@ async def handle_connect(sid, environ):
             'status': 'full',
             'message': 'Game is full! Two players are already connected.'
         }, to=sid)
-        print(f"⚠️ [REJECTED] Third device attempted to connect from {client_ip} (sid: {sid[:8]}). Game is full.")
+        print(f"⚠️ [REJECTED] Device attempted to connect from {client_ip} (sid: {sid[:8]}). Game is full.")
 
 @sio.on('disconnect')
 async def handle_disconnect(sid):
@@ -205,18 +244,17 @@ async def handle_disconnect(sid):
         player_num = sid_to_player.pop(sid)
         connected_players[player_num] = None
         
-        # Dynamically detach virtual controller from Windows
-        ctrl = controllers.pop(player_num, None)
+        # Neutralize controller inputs so game character stops moving,
+        # but keep the controller plugged into Windows for instant reconnect
+        ctrl = controllers.get(player_num)
         if ctrl:
             try:
                 ctrl.reset()
                 ctrl.update()
             except Exception:
                 pass
-            del ctrl
-            print(f"🔌 [ViGEmBus] Virtual Xbox 360 Controller #{player_num} unplugged from Windows.")
             
-        print(f"🔴 [DISCONNECT] Player {player_num} disconnected.")
+        print(f"🔴 [DISCONNECT] Player {player_num} disconnected. Slot {player_num} freed.")
         _print_player_status()
 
 @sio.on('input')
@@ -225,12 +263,10 @@ async def handle_input(sid, data):
     Handle real-time controller inputs from connected phones with zero lag (<1ms).
     Fast-paths Gamepad XInput inputs directly to ViGEmBus kernel driver.
     """
-    # 1. FAST PATH: Virtual Xbox 360 Controller (Player 1 & 2 via ViGEmBus)
     player_num = sid_to_player.get(sid)
     if player_num and player_num in controllers:
         ctrl = controllers[player_num]
         try:
-            # Batch input list support (multiple inputs packed in a single frame)
             if isinstance(data, list):
                 for item in data:
                     _apply_gamepad_item(ctrl, item)
@@ -244,8 +280,8 @@ async def handle_input(sid, data):
             print(f"[!] Input processing error for Player {player_num}: {e}")
         return
 
-    # 2. Universal PC Desktop / Mouse / Keyboard Emulation Fallback
-    inp_type = data.get('type') or data.get('t')
+    # Fallback to Universal Desktop Mouse / Keyboard emulation
+    inp_type = str(data.get('type') or data.get('t', '')).lower()
     try:
         if inp_type == 'scroll':
             delta = int(data.get('delta', 0))
@@ -262,7 +298,7 @@ async def handle_input(sid, data):
             return
 
         elif inp_type == 'mouse_click':
-            btn = data.get('button', 'left')
+            btn = str(data.get('button', 'left')).lower()
             pressed = bool(data.get('pressed', False))
             if user32:
                 if btn == 'left':
@@ -290,12 +326,21 @@ async def handle_input(sid, data):
 
 def _apply_gamepad_item(ctrl, item):
     """Sub-microsecond helper to update a single virtual Xbox 360 controller control."""
-    inp_type = item.get('type') or item.get('t')
+    inp_type = str(item.get('type') or item.get('t', '')).lower()
 
-    if inp_type == 'button' or inp_type == 'b':
-        btn_name = item.get('button') or item.get('b')
+    if inp_type in ('button', 'b'):
+        btn_raw = str(item.get('button') or item.get('b', '')).upper().strip()
         pressed = bool(item.get('pressed', item.get('p', False)))
-        xusb_btn = BUTTON_MAP.get(btn_name)
+        
+        # Handle LT / RT sent as buttons
+        if btn_raw in ('LT', 'LEFT_TRIGGER', 'L2'):
+            ctrl.left_trigger_float(value_float=1.0 if pressed else 0.0)
+            return True
+        elif btn_raw in ('RT', 'RIGHT_TRIGGER', 'R2'):
+            ctrl.right_trigger_float(value_float=1.0 if pressed else 0.0)
+            return True
+
+        xusb_btn = BUTTON_MAP.get(btn_raw)
         if xusb_btn:
             if pressed:
                 ctrl.press_button(button=xusb_btn)
@@ -303,24 +348,24 @@ def _apply_gamepad_item(ctrl, item):
                 ctrl.release_button(button=xusb_btn)
             return True
 
-    elif inp_type == 'left_stick' or inp_type == 'ls':
+    elif inp_type in ('left_stick', 'ls'):
         x = float(item.get('x', 0.0))
         y = float(item.get('y', 0.0))
         ctrl.left_joystick_float(x_value_float=max(-1.0, min(1.0, x)), y_value_float=max(-1.0, min(1.0, y)))
         return True
 
-    elif inp_type == 'right_stick' or inp_type == 'rs':
+    elif inp_type in ('right_stick', 'rs'):
         x = float(item.get('x', 0.0))
         y = float(item.get('y', 0.0))
         ctrl.right_joystick_float(x_value_float=max(-1.0, min(1.0, x)), y_value_float=max(-1.0, min(1.0, y)))
         return True
 
-    elif inp_type == 'trigger' or inp_type == 'trig':
-        trig_name = item.get('trigger') or item.get('trig')
+    elif inp_type in ('trigger', 'trig'):
+        trig_name = str(item.get('trigger') or item.get('trig', '')).upper().strip()
         val = max(0.0, min(1.0, float(item.get('value', item.get('v', 0.0)))))
-        if trig_name == 'LT':
+        if trig_name in ('LT', 'L2', 'LEFT'):
             ctrl.left_trigger_float(value_float=val)
-        elif trig_name == 'RT':
+        elif trig_name in ('RT', 'R2', 'RIGHT'):
             ctrl.right_trigger_float(value_float=val)
         return True
 
@@ -333,11 +378,54 @@ def _apply_gamepad_item(ctrl, item):
         ctrl.right_joystick_float(x_value_float=rx, y_value_float=ry)
         return True
 
-    elif inp_type == 'reset' or inp_type == 'r':
+    elif inp_type in ('reset', 'r'):
         ctrl.reset()
         return True
 
     return False
+
+# Backward compatibility direct listeners
+@sio.on('button_down')
+async def handle_button_down(sid, data):
+    p_num = sid_to_player.get(sid)
+    if p_num and p_num in controllers:
+        btn = str(data.get('button', '')).upper().strip()
+        ctrl = controllers[p_num]
+        if btn in ('LT', 'LEFT_TRIGGER', 'L2'):
+            ctrl.left_trigger_float(value_float=1.0)
+        elif btn in ('RT', 'RIGHT_TRIGGER', 'R2'):
+            ctrl.right_trigger_float(value_float=1.0)
+        elif btn in BUTTON_MAP:
+            ctrl.press_button(button=BUTTON_MAP[btn])
+        ctrl.update()
+
+@sio.on('button_up')
+async def handle_button_up(sid, data):
+    p_num = sid_to_player.get(sid)
+    if p_num and p_num in controllers:
+        btn = str(data.get('button', '')).upper().strip()
+        ctrl = controllers[p_num]
+        if btn in ('LT', 'LEFT_TRIGGER', 'L2'):
+            ctrl.left_trigger_float(value_float=0.0)
+        elif btn in ('RT', 'RIGHT_TRIGGER', 'R2'):
+            ctrl.right_trigger_float(value_float=0.0)
+        elif btn in BUTTON_MAP:
+            ctrl.release_button(button=BUTTON_MAP[btn])
+        ctrl.update()
+
+@sio.on('joystick_move')
+async def handle_joystick_move(sid, data):
+    p_num = sid_to_player.get(sid)
+    if p_num and p_num in controllers:
+        stick = str(data.get('stick', '')).lower()
+        x = max(-1.0, min(1.0, float(data.get('x', 0.0))))
+        y = max(-1.0, min(1.0, float(data.get('y', 0.0))))
+        ctrl = controllers[p_num]
+        if stick in ('left', 'left_stick', 'ls'):
+            ctrl.left_joystick_float(x_value_float=x, y_value_float=y)
+        elif stick in ('right', 'right_stick', 'rs'):
+            ctrl.right_joystick_float(x_value_float=x, y_value_float=y)
+        ctrl.update()
 
 @sio.on('ping_check')
 async def handle_ping_check(sid, data):
@@ -353,21 +441,22 @@ def _print_player_status():
 # Main Entry Point
 # ---------------------------------------------------------------------------
 def main():
-    # Controllers are attached dynamically on-demand when phones connect
-    
+    # 1. Initialize persistent virtual Xbox 360 controllers
+    init_virtual_gamepads()
+
     # 2. Resolve local network address
     local_ip = get_local_ip()
     port = 5000
     server_url = f"http://{local_ip}:{port}"
     
-    print("\n" + "=" * 62)
-    print(" ⚽ EA SPORTS FC 26 - DUAL PHONE CONTROLLER SERVER ⚽")
-    print("=" * 62)
+    print("\n" + "=" * 64)
+    print(" 🎮 DUOPAD - ZERO-LATENCY ESPORTS GAMEPAD SERVER 🎮")
+    print("=" * 64)
     print(f"  Local Wi-Fi IP:    {local_ip}")
     print(f"  Port:              {port}")
-    print(f"\n  👉 OPEN THIS URL ON BOTH ANDROID PHONES:")
+    print(f"\n  👉 OPEN THIS URL ON YOUR SMARTPHONE(S):")
     print(f"     {server_url}")
-    print("=" * 62)
+    print("=" * 64)
     
     # 3. Print QR code in terminal for instant scanning
     try:
@@ -379,17 +468,16 @@ def main():
     except Exception:
         pass
         
-    print("\n" + "-" * 62)
+    print("\n" + "-" * 64)
     print("  🎮 LIVE CONTROLLER SLOTS:")
-    print("   • Slot 1: [ FREE ] -> Ready for Phone 1 (Player 1)")
-    print("   • Slot 2: [ FREE ] -> Ready for Phone 2 (Player 2)")
+    print("   • Slot 1: [ ACTIVE IN WINDOWS ] -> Ready for Phone 1 (Player 1)")
+    print("   • Slot 2: [ ACTIVE IN WINDOWS ] -> Ready for Phone 2 (Player 2)")
     print("   (Both virtual Xbox 360 controllers are active in joy.cpl)")
-    print("-" * 62)
+    print("-" * 64)
     print("  [joy.cpl Tip] Run 'joy.cpl' in Windows to see both controllers!")
     print("  Server is listening on 0.0.0.0:5000 (Press Ctrl+C to stop)...")
-    print("=" * 62 + "\n")
+    print("=" * 64 + "\n")
     
-    # Run the high-performance async web server on 0.0.0.0
     web.run_app(app, host='0.0.0.0', port=port, print=None)
 
 if __name__ == '__main__':

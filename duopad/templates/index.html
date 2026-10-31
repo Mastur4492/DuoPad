@@ -34,20 +34,24 @@
     <style>
         /* ==========================================================================
            DuoPad - Cyberpunk Esports Xbox 360 Mobile Virtual Controller
-           Pixel-faithful replication of official DuoPad controller interface
+           Engineered for 120Hz Displays, Sub-1ms Latency & Multi-touch Precision
            ========================================================================== */
         :root {
             --bg-color: #030813;
             --border-cyan: rgba(0, 195, 255, 0.45);
             --border-cyan-bright: #00e5ff;
-            --btn-bg: rgba(6, 18, 34, 0.65);
-            --btn-active-bg: rgba(0, 229, 255, 0.28);
-            --btn-active-glow: 0 0 20px rgba(0, 229, 255, 0.85);
+            --btn-bg: rgba(6, 18, 34, 0.70);
+            --btn-active-bg: rgba(0, 229, 255, 0.35);
+            --btn-active-glow: 0 0 22px rgba(0, 229, 255, 0.9);
             --knob-color: #00e5ff;
             --knob-glow: 0 0 20px #00e5ff, 0 0 35px rgba(0, 229, 255, 0.7);
             --ring-glow: 0 0 16px rgba(0, 229, 255, 0.45);
             --text-color: #ffffff;
             --status-color: #10b981;
+            --color-a: #22c55e;
+            --color-b: #ef4444;
+            --color-x: #38bdf8;
+            --color-y: #facc15;
         }
 
         /* Player 2 Radiant Neon Magenta Theme */
@@ -55,9 +59,9 @@
             --bg-color: #0d020a;
             --border-cyan: rgba(255, 45, 117, 0.45);
             --border-cyan-bright: #ff2d75;
-            --btn-bg: rgba(34, 6, 26, 0.65);
-            --btn-active-bg: rgba(255, 45, 117, 0.28);
-            --btn-active-glow: 0 0 20px rgba(255, 45, 117, 0.85);
+            --btn-bg: rgba(34, 6, 26, 0.70);
+            --btn-active-bg: rgba(255, 45, 117, 0.35);
+            --btn-active-glow: 0 0 22px rgba(255, 45, 117, 0.9);
             --knob-color: #ff2d75;
             --knob-glow: 0 0 20px #ff2d75, 0 0 35px rgba(255, 45, 117, 0.7);
             --ring-glow: 0 0 16px rgba(255, 45, 117, 0.45);
@@ -313,7 +317,7 @@
             color: var(--text-color);
             border-radius: 9999px;
             font-size: clamp(0.85rem, 1.9vw, 1.05rem);
-            font-weight: 600;
+            font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -397,18 +401,31 @@
         .dpad-capsule {
             border: 1.5px solid var(--border-cyan);
             background: var(--btn-bg);
+            color: #94a3b8;
             touch-action: none;
             position: absolute;
             pointer-events: auto;
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-            transition: background 0.04s, border-color 0.04s, box-shadow 0.04s;
+            transition: background 0.04s, border-color 0.04s, box-shadow 0.04s, color 0.04s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
         }
 
         .dpad-capsule.active, .dpad-capsule:active {
             background: var(--btn-active-bg) !important;
             border-color: var(--border-cyan-bright) !important;
             box-shadow: var(--btn-active-glow) !important;
+            color: #ffffff !important;
+        }
+
+        .dpad-icon {
+            width: clamp(14px, 2.2vw, 18px);
+            height: clamp(14px, 2.2vw, 18px);
+            pointer-events: none;
+            opacity: 0.85;
         }
 
         .dpad-up {
@@ -472,7 +489,7 @@
             height: clamp(30px, 7.5vh, 38px);
             border-radius: 9999px;
             font-size: clamp(0.78rem, 1.7vw, 0.92rem);
-            font-weight: 600;
+            font-weight: 700;
             letter-spacing: 0.4px;
         }
 
@@ -583,7 +600,7 @@
             background: var(--btn-bg);
             color: var(--text-color);
             font-size: clamp(1.2rem, 2.6vw, 1.55rem);
-            font-weight: 700;
+            font-weight: 800;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -593,54 +610,60 @@
             cursor: pointer;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
             transition: background 0.04s, border-color 0.04s, box-shadow 0.04s, transform 0.04s;
+            outline: none;
         }
 
+        /* Authentic Xbox Face Button Colors */
         .btn-y {
             top: 0;
             left: 50%;
             transform: translateX(-50%);
+            color: var(--color-y);
         }
         .btn-y.active, .btn-y:active {
             transform: translateX(-50%) scale(0.95);
-            background: var(--btn-active-bg) !important;
-            border-color: var(--border-cyan-bright) !important;
-            box-shadow: var(--btn-active-glow) !important;
+            background: rgba(250, 204, 21, 0.25) !important;
+            border-color: var(--color-y) !important;
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.8) !important;
         }
 
         .btn-x {
             left: 0;
             top: 50%;
             transform: translateY(-50%);
+            color: var(--color-x);
         }
         .btn-x.active, .btn-x:active {
             transform: translateY(-50%) scale(0.95);
-            background: var(--btn-active-bg) !important;
-            border-color: var(--border-cyan-bright) !important;
-            box-shadow: var(--btn-active-glow) !important;
+            background: rgba(56, 189, 248, 0.25) !important;
+            border-color: var(--color-x) !important;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.8) !important;
         }
 
         .btn-b {
             right: 0;
             top: 50%;
             transform: translateY(-50%);
+            color: var(--color-b);
         }
         .btn-b.active, .btn-b:active {
             transform: translateY(-50%) scale(0.95);
-            background: var(--btn-active-bg) !important;
-            border-color: var(--border-cyan-bright) !important;
-            box-shadow: var(--btn-active-glow) !important;
+            background: rgba(239, 68, 68, 0.25) !important;
+            border-color: var(--color-b) !important;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.8) !important;
         }
 
         .btn-a {
             bottom: 0;
             left: 50%;
             transform: translateX(-50%);
+            color: var(--color-a);
         }
         .btn-a.active, .btn-a:active {
             transform: translateX(-50%) scale(0.95);
-            background: var(--btn-active-bg) !important;
-            border-color: var(--border-cyan-bright) !important;
-            box-shadow: var(--btn-active-glow) !important;
+            background: rgba(34, 197, 94, 0.25) !important;
+            border-color: var(--color-a) !important;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.8) !important;
         }
     </style>
 </head>
@@ -685,7 +708,7 @@
         <header class="top-row">
             <button class="pill-btn" id="btn-LT" data-trigger="LT">LT</button>
             <button class="pill-btn" id="btn-LB" data-btn="LB">LB</button>
-            <button class="pill-btn" id="btn-GUIDE" data-btn="Guid">Guid</button>
+            <button class="pill-btn" id="btn-GUIDE" data-btn="GUIDE">Guid</button>
             <button class="pill-btn" id="btn-RB" data-btn="RB">RB</button>
             <button class="pill-btn" id="btn-RT" data-trigger="RT">RT</button>
         </header>
@@ -699,17 +722,25 @@
 
         <!-- Capsule D-Pad (Lower-Left Cross) -->
         <div class="pos-dpad">
-            <button class="dpad-capsule dpad-up" id="btn-DPAD_UP" data-btn="DPAD_UP" aria-label="Up"></button>
-            <button class="dpad-capsule dpad-left" id="btn-DPAD_LEFT" data-btn="DPAD_LEFT" aria-label="Left"></button>
-            <button class="dpad-capsule dpad-right" id="btn-DPAD_RIGHT" data-btn="DPAD_RIGHT" aria-label="Right"></button>
-            <button class="dpad-capsule dpad-down" id="btn-DPAD_DOWN" data-btn="DPAD_DOWN" aria-label="Down"></button>
+            <button class="dpad-capsule dpad-up" id="btn-DPAD_UP" data-btn="DPAD_UP" aria-label="Up">
+                <svg viewBox="0 0 24 24" class="dpad-icon"><polygon points="12,5 19,16 5,16" fill="currentColor"/></svg>
+            </button>
+            <button class="dpad-capsule dpad-left" id="btn-DPAD_LEFT" data-btn="DPAD_LEFT" aria-label="Left">
+                <svg viewBox="0 0 24 24" class="dpad-icon"><polygon points="5,12 16,5 16,19" fill="currentColor"/></svg>
+            </button>
+            <button class="dpad-capsule dpad-right" id="btn-DPAD_RIGHT" data-btn="DPAD_RIGHT" aria-label="Right">
+                <svg viewBox="0 0 24 24" class="dpad-icon"><polygon points="19,12 8,5 8,19" fill="currentColor"/></svg>
+            </button>
+            <button class="dpad-capsule dpad-down" id="btn-DPAD_DOWN" data-btn="DPAD_DOWN" aria-label="Down">
+                <svg viewBox="0 0 24 24" class="dpad-icon"><polygon points="12,19 19,8 5,8" fill="currentColor"/></svg>
+            </button>
         </div>
 
         <!-- Center Cluster (Back/Start, LS/RS, Mini Status HUD) -->
         <div class="pos-center-cluster">
             <div class="center-row">
-                <button class="pill-btn pill-center" id="btn-BACK" data-btn="Back">Back</button>
-                <button class="pill-btn pill-center" id="btn-START" data-btn="Start">Start</button>
+                <button class="pill-btn pill-center" id="btn-BACK" data-btn="BACK">Back</button>
+                <button class="pill-btn pill-center" id="btn-START" data-btn="START">Start</button>
             </div>
             <div class="center-row">
                 <button class="pill-btn pill-center" id="btn-LS" data-btn="LS">LS</button>
@@ -748,7 +779,7 @@
 
     <!-- Scripts -->
     <script src="/static/socket.io.min.js"></script>
-    <script src="/static/controller.js?v=50"></script>
+    <script src="/static/controller.js?v=102"></script>
     <script>
         // Auto-enter fullscreen on first tap for immersive play
         function enterFullscreen() {
@@ -762,6 +793,7 @@
             }
         }
         window.addEventListener('touchstart', enterFullscreen, { passive: true, once: true });
+        window.addEventListener('pointerdown', enterFullscreen, { passive: true, once: true });
         window.addEventListener('click', enterFullscreen, { passive: true, once: true });
     </script>
 </body>
