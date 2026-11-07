@@ -12,15 +12,9 @@
       "permanent": true
     },
     {
-      "source": "/DuoPad_Setup.exe",
-      "destination": "https://raw.githubusercontent.com/Mastur4492/DuoPad/main/duopad-web/DuoPad_Setup.exe",
-      "permanent": false
-    },
-    {
       "source": "/duopad-web/DuoPad_Setup.exe",
-      "destination": "https://raw.githubusercontent.com/Mastur4492/DuoPad/main/duopad-web/DuoPad_Setup.exe",
+      "destination": "/DuoPad_Setup.exe",
       "permanent": false
     }
   ]
 }
-

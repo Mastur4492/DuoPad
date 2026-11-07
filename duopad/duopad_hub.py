@@ -90,7 +90,16 @@ sio = socketio.AsyncServer(
     http_compression=False,
     async_handlers=False
 )
-app = web.Application()
+
+@web.middleware
+async def no_cache_middleware(request, handler):
+    resp = await handler(request)
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
+
+app = web.Application(middlewares=[no_cache_middleware])
 sio.attach(app)
 
 if getattr(sys, 'frozen', False):
