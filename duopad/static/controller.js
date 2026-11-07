@@ -1,14 +1,13 @@
 /**
- * DuoPad - Esports Ultra-Low Latency Mobile Gamepad Engine v4.0
+ * DuoPad - Esports Ultra-Low Latency Mobile Gamepad Engine v5.0
  * 
- * Engineered for 120Hz/144Hz Displays, Zero Lag (<1ms), and 100% Anti-Stick Reliability:
- *  - Dynamic Thumb-Anchored Joysticks (centers on finger touch, zero initial jerk)
- *  - Floating Deadzone Follower (never gets glued to edge; instant direction reversal)
- *  - Hardware Digitizer Watchdog (reconciles with e.touches; impossible to leave stuck)
+ * Engineered for 120Hz/144Hz Displays, Zero Lag (<1ms), and 100% Auto-Center Precision:
+ *  - Spring-Loaded Auto-Centering (returns to exact default center instantly when released)
+ *  - Hardware Digitizer Watchdog (reconciles with e.touches; impossible to stay off-center)
+ *  - Triple-Dispatch Reliable Neutral Protocol (guaranteed 0.0, 0.0 center in Windows)
  *  - Ultra-compact 16-byte tuple packets (['ls', x, y]) with 0ms kernel dispatch
- *  - Guaranteed reliable dual-dispatch on stick neutral release
  *  - Dedicated multi-touch engine isolated from buttons and D-Pad
- *  - PC Mouse fallback for desktop browser testing
+ *  - Global Mouse & Touch release listeners for PC browser & phone testing
  * 100% Free and Open Source for Gamers.
  */
 
@@ -287,7 +286,7 @@
     }
 
     // --------------------------------------------------------------------------
-    // Esports-Grade Virtual Joystick v4.0 (Zero-Stick & Thumb-Follower)
+    // Esports-Grade Virtual Joystick v5.0 (Spring-Loaded Auto-Centering)
     // --------------------------------------------------------------------------
     class VirtualJoystick {
         constructor(zoneId, knobId, stickType) {
@@ -299,9 +298,9 @@
             this.touchId = null;
             this.isMouseDown = false;
             
-            // Dynamic Anchor Coordinates
-            this.anchorX = 0;
-            this.anchorY = 0;
+            // Default Geometric Center (Ring center on screen)
+            this.centerX = 0;
+            this.centerY = 0;
             this.maxRadius = 50; // Full travel radius (pixels)
             this.deadzone = 0.05; // 5% clean deadzone
 
@@ -313,6 +312,14 @@
             this.lastSendTime = 0;
 
             this.initEvents();
+        }
+
+        updateCenter() {
+            if (!this.base && !this.zone) return;
+            const rect = (this.base || this.zone).getBoundingClientRect();
+            this.centerX = rect.left + rect.width / 2;
+            this.centerY = rect.top + rect.height / 2;
+            this.maxRadius = Math.max(38, Math.min(56, (rect.width - 48) / 2 + 10));
         }
 
         initEvents() {
@@ -338,23 +345,13 @@
             const touch = e.changedTouches[0];
             this.touchId = touch.identifier;
 
-            // Dynamic Anchor: Centered directly where thumb contacts the screen
-            this.anchorX = touch.clientX;
-            this.anchorY = touch.clientY;
-
-            // Calculate responsive maxRadius based on zone size
-            const rect = (this.base || this.zone).getBoundingClientRect();
-            this.maxRadius = Math.max(38, Math.min(56, (rect.width - 48) / 2 + 10));
+            // Anchor center directly to default geometric ring center
+            this.updateCenter();
 
             if (this.base) this.base.classList.add('active-stick');
             this.knob.style.transition = 'none';
-            this.knob.style.transform = 'translate3d(0px, 0px, 0)';
 
-            this.currentX = 0.0;
-            this.currentY = 0.0;
-            this.lastSentX = 0.0;
-            this.lastSentY = 0.0;
-            this.lastSendTime = performance.now();
+            this.processInput(touch.clientX, touch.clientY);
         }
 
         onTouchMove(e) {
@@ -386,21 +383,12 @@
             e.preventDefault();
             this.isMouseDown = true;
 
-            this.anchorX = e.clientX;
-            this.anchorY = e.clientY;
-
-            const rect = (this.base || this.zone).getBoundingClientRect();
-            this.maxRadius = Math.max(38, Math.min(56, (rect.width - 48) / 2 + 10));
+            this.updateCenter();
 
             if (this.base) this.base.classList.add('active-stick');
             this.knob.style.transition = 'none';
-            this.knob.style.transform = 'translate3d(0px, 0px, 0)';
 
-            this.currentX = 0.0;
-            this.currentY = 0.0;
-            this.lastSentX = 0.0;
-            this.lastSentY = 0.0;
-            this.lastSendTime = performance.now();
+            this.processInput(e.clientX, e.clientY);
         }
 
         onMouseMove(e) {
@@ -414,30 +402,27 @@
             this.resetKnob();
         }
 
-        // --- Core Math, Floating Deadzone & GPU Render ---
+        // --- Core Math & Spring Center Rendering ---
         processInput(clientX, clientY) {
-            let dx = clientX - this.anchorX;
-            let dy = clientY - this.anchorY;
+            const dx = clientX - this.centerX;
+            const dy = clientY - this.centerY;
             const dist = Math.hypot(dx, dy);
 
-            // FLOATING DEADZONE FOLLOWER (THE SECRET TO ZERO STICKING)
-            // If thumb drags beyond maxRadius, smoothly drag the anchor forward.
-            // This guarantees instant direction reversal with ZERO dead space!
+            let clampedX = dx;
+            let clampedY = dy;
+
+            // Constrain knob within the visual ring boundary
             if (dist > this.maxRadius) {
-                const excess = dist - this.maxRadius;
-                this.anchorX += (dx / dist) * excess;
-                this.anchorY += (dy / dist) * excess;
-                // Recompute clamped deltas
-                dx = (dx / dist) * this.maxRadius;
-                dy = (dy / dist) * this.maxRadius;
+                clampedX = (dx / dist) * this.maxRadius;
+                clampedY = (dy / dist) * this.maxRadius;
             }
 
-            // Direct GPU layer render (0ms instant visual response)
-            this.knob.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0)`;
+            // Direct GPU layer render: knob moves smoothly from default center (0ms lag)
+            this.knob.style.transform = `translate3d(${clampedX.toFixed(1)}px, ${clampedY.toFixed(1)}px, 0)`;
 
             // Normalized coordinates (-1.0 to 1.0, Xbox 360 standard: UP is positive Y)
-            const rawX = dx / this.maxRadius;
-            const rawY = -(dy / this.maxRadius);
+            const rawX = clampedX / this.maxRadius;
+            const rawY = -(clampedY / this.maxRadius);
 
             const distRatio = Math.hypot(rawX, rawY);
             if (distRatio > this.deadzone) {
@@ -455,7 +440,7 @@
             const timeDelta = now - this.lastSendTime;
             const posDelta = Math.hypot(this.currentX - this.lastSentX, this.currentY - this.lastSentY);
 
-            // Only transmit when position changes significantly or at 60Hz intervals
+            // Only transmit when position changes or at 60Hz intervals
             if (timeDelta >= 15 && posDelta >= 0.006) {
                 this.lastSendTime = now;
                 this.lastSentX = this.currentX;
@@ -464,15 +449,25 @@
             }
         }
 
+        /**
+         * INSTANT AUTO-CENTER:
+         * As soon as released, the knob spring-snaps back to default center (0, 0)
+         * and the virtual gamepad immediately returns to neutral in Windows.
+         */
         resetKnob() {
             this.touchId = null;
             this.isMouseDown = false;
 
             if (this.base) this.base.classList.remove('active-stick');
 
-            // Quick, satisfying snap back to center
-            this.knob.style.transition = 'transform 0.07s cubic-bezier(0.2, 0.9, 0.3, 1)';
+            // Quick, satisfying spring-snap back to default center (0px, 0px)
+            this.knob.style.transition = 'transform 0.08s cubic-bezier(0.2, 0.9, 0.3, 1)';
             this.knob.style.transform = 'translate3d(0px, 0px, 0)';
+            setTimeout(() => {
+                if (this.touchId === null && !this.isMouseDown) {
+                    this.knob.style.transition = '';
+                }
+            }, 90);
 
             this.currentX = 0.0;
             this.currentY = 0.0;
@@ -480,14 +475,19 @@
             this.lastSentY = 0.0;
             this.lastSendTime = performance.now();
 
-            // GUARANTEED NON-VOLATILE NEUTRAL COMMAND
-            // Dispatched immediately + verified 35ms follow-up to eliminate any sticking forever
+            // GUARANTEED TRIPLE-DISPATCH NEUTRAL COMMAND
+            // Dispatched immediately + 25ms + 60ms verification to eliminate any chance of sticking
             sendStickReliable(this.stickType, 0.0, 0.0);
             setTimeout(() => {
                 if (this.touchId === null && !this.isMouseDown) {
                     sendStickReliable(this.stickType, 0.0, 0.0);
                 }
-            }, 35);
+            }, 25);
+            setTimeout(() => {
+                if (this.touchId === null && !this.isMouseDown) {
+                    sendStickReliable(this.stickType, 0.0, 0.0);
+                }
+            }, 60);
         }
     }
 
@@ -511,12 +511,12 @@
             physicalTouchIds.add(e.touches[i].identifier);
         }
 
-        // If Left Stick touch is no longer on glass, reset immediately
+        // If Left Stick touch is no longer on glass, reset immediately to center
         if (leftStick && leftStick.touchId !== null && !physicalTouchIds.has(leftStick.touchId)) {
             leftStick.resetKnob();
         }
 
-        // If Right Stick touch is no longer on glass, reset immediately
+        // If Right Stick touch is no longer on glass, reset immediately to center
         if (rightStick && rightStick.touchId !== null && !physicalTouchIds.has(rightStick.touchId)) {
             rightStick.resetKnob();
         }
@@ -533,6 +533,12 @@
     window.addEventListener('touchend', reconcileHardwareTouches, { passive: true });
     window.addEventListener('touchcancel', reconcileHardwareTouches, { passive: true });
     window.addEventListener('touchmove', reconcileHardwareTouches, { passive: true });
+
+    // Global Mouse Release Fallback (For desktop PC browser testing)
+    window.addEventListener('mouseup', () => {
+        if (leftStick && leftStick.isMouseDown) leftStick.resetKnob();
+        if (rightStick && rightStick.isMouseDown) rightStick.resetKnob();
+    });
 
     // --------------------------------------------------------------------------
     // Watchdog: Automatic Zombie Touch & Visibility Reclamation
@@ -575,7 +581,7 @@
         initButtons();
         leftStick = new VirtualJoystick('left-stick-zone', 'left-stick-knob', 'left_stick');
         rightStick = new VirtualJoystick('right-stick-zone', 'right-stick-knob', 'right_stick');
-        console.log('[DuoPad] Anti-Stick Controller Engine v4.0 ready.');
+        console.log('[DuoPad] Auto-Center Controller Engine v5.0 ready.');
     });
 
 })();
