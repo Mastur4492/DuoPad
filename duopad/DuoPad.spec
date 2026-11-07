@@ -1,23 +1,30 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('templates', 'templates'), ('static', 'static'), ('duopad_neon.ico', '.'), ('duopad_icon.png', '.')]
-binaries = [('C:/Users/mo.mastur/anaconda3/Library/bin/tcl86t.dll', '.'), ('C:/Users/mo.mastur/anaconda3/Library/bin/tk86t.dll', '.'), ('C:/Users/mo.mastur/anaconda3/Library/bin/ffi.dll', '.')]
-hiddenimports = ['engineio.async_drivers.aiohttp']
-tmp_ret = collect_all('vgamepad')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+datas = [
+    ('templates', 'templates'),
+    ('static', 'static'),
+    ('duopad_neon.ico', '.'),
+    ('duopad_icon.png', '.')
+]
+binaries = []
+hiddenimports = ['engineio.async_drivers.aiohttp', 'aiohttp', 'socketio']
 
+tmp_ret = collect_all('vgamepad')
+datas += tmp_ret[0]
+binaries += tmp_ret[1]
+hiddenimports += tmp_ret[2]
 
 a = Analysis(
     ['duopad_hub.py'],
-    pathex=['C:/Users/mo.mastur/anaconda3/Library/bin', 'C:/Users/mo.mastur/anaconda3/DLLs'],
+    pathex=[],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['PIL', 'Pillow', 'pytest', 'numpy', 'pygments', 'scipy', 'pandas'],
+    excludes=['PIL', 'Pillow', 'pytest', 'numpy', 'pygments', 'scipy', 'pandas', 'matplotlib'],
     noarchive=False,
     optimize=0,
 )

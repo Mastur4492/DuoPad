@@ -2,7 +2,7 @@
 #define MyAppName "DuoPad"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "DuoPad Gaming"
-#define MyAppURL "https://duopad.surge.sh"
+#define MyAppURL "https://duopad-web.vercel.app"
 #define MyAppExeName "DuoPad.exe"
 
 [Setup]

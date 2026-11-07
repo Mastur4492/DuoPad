@@ -47,7 +47,7 @@ git clone https://github.com/Mastur4492/DuoPad.git
 cd DuoPad/duopad
 Install_DuoPad.bat
 ```
-*(Or download the 1-click Windows setup installer `DuoPad_Setup.exe` from [duopad-web.vercel.app](https://duopad-web.vercel.app)).*
+*(Or download the 1-click Windows setup installer `DuoPad_Setup.exe` directly from [duopad-web.vercel.app](https://duopad-web.vercel.app) or [GitHub Fast Mirror](https://github.com/Mastur4492/DuoPad/raw/main/duopad-web/DuoPad_Setup.exe)).*
 
 ### 2. Launching
 1. Launch **DuoPad** from your Desktop shortcut or run `Run_DuoPad.bat`.

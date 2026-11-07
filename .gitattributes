@@ -1,0 +1,16 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# Windows Executables, Drivers and Media MUST be treated as strict binary
+# Prevents git and Linux build runners (Vercel, GitHub Actions) from altering CRLF bytes and corrupting executables
+*.exe binary
+*.dll binary
+*.msi binary
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.zip binary
+*.pyc binary
+*.pyd binary
