@@ -86,7 +86,9 @@ sio = socketio.AsyncServer(
     async_mode='aiohttp',
     cors_allowed_origins='*',
     ping_timeout=10,
-    ping_interval=5
+    ping_interval=5,
+    http_compression=False,
+    async_handlers=False
 )
 app = web.Application()
 sio.attach(app)
@@ -275,7 +277,7 @@ async def handle_disconnect(sid):
         print(f"[DuoPad] Player {p_num} disconnected. Slot freed.")
 
 @sio.on('input')
-async def handle_input(sid, data):
+def handle_input(sid, data):
     """
     Handle real-time controller inputs with zero lag (<1ms).
     Fast-paths Gamepad XInput directly to ViGEmBus kernel driver.
@@ -286,10 +288,16 @@ async def handle_input(sid, data):
         try:
             player_last_active[player_num] = time.time()
             if isinstance(data, list):
-                for item in data:
-                    _apply_gamepad_item(ctrl, item, player_num)
-                ctrl.update()
-                return
+                # Check if it's a compact tuple packet like ['ls', x, y] or a batch of items
+                if data and isinstance(data[0], str):
+                    if _apply_gamepad_item(ctrl, data, player_num):
+                        ctrl.update()
+                        return
+                else:
+                    for item in data:
+                        _apply_gamepad_item(ctrl, item, player_num)
+                    ctrl.update()
+                    return
 
             if _apply_gamepad_item(ctrl, data, player_num):
                 ctrl.update()
@@ -299,7 +307,7 @@ async def handle_input(sid, data):
         return
 
     # Fallback to Desktop Mouse / Keyboard emulation
-    inp_type = str(data.get('type') or data.get('t', '')).lower()
+    inp_type = str(data.get('type') or data.get('t', '')).lower() if isinstance(data, dict) else ''
     try:
         if inp_type == 'scroll':
             delta = int(data.get('delta', 0))
@@ -344,6 +352,63 @@ async def handle_input(sid, data):
 
 def _apply_gamepad_item(ctrl, item, p_num=None):
     """Sub-microsecond helper to update a single virtual Xbox 360 controller control."""
+    # Fast path for compact tuple/list format: ['b', 'A', 1], ['ls', x, y], ['rs', x, y], ['t', 'RT', 1.0], ['r']
+    if isinstance(item, (list, tuple)):
+        if not item:
+            return False
+        code = item[0]
+        if code == 'b':  # Button
+            btn_raw = str(item[1]).upper().strip()
+            pressed = bool(item[2])
+            if p_num:
+                player_telemetry[p_num] = f"Btn: {btn_raw}" if pressed else "Neutral"
+            if btn_raw in ('LT', 'LEFT_TRIGGER', 'L2'):
+                ctrl.left_trigger_float(value_float=1.0 if pressed else 0.0)
+                return True
+            elif btn_raw in ('RT', 'RIGHT_TRIGGER', 'R2'):
+                ctrl.right_trigger_float(value_float=1.0 if pressed else 0.0)
+                return True
+            xusb_btn = BUTTON_MAP.get(btn_raw)
+            if xusb_btn:
+                if pressed:
+                    ctrl.press_button(button=xusb_btn)
+                else:
+                    ctrl.release_button(button=xusb_btn)
+                return True
+        elif code == 'ls':  # Left Stick
+            x = float(item[1])
+            y = float(item[2])
+            if p_num and (abs(x) > 0.05 or abs(y) > 0.05):
+                player_telemetry[p_num] = f"LS: ({x:.2f}, {y:.2f})"
+            ctrl.left_joystick_float(x_value_float=max(-1.0, min(1.0, x)), y_value_float=max(-1.0, min(1.0, y)))
+            return True
+        elif code == 'rs':  # Right Stick
+            x = float(item[1])
+            y = float(item[2])
+            if p_num and (abs(x) > 0.05 or abs(y) > 0.05):
+                player_telemetry[p_num] = f"RS: ({x:.2f}, {y:.2f})"
+            ctrl.right_joystick_float(x_value_float=max(-1.0, min(1.0, x)), y_value_float=max(-1.0, min(1.0, y)))
+            return True
+        elif code == 't':  # Trigger
+            trig_name = str(item[1]).upper().strip()
+            val = max(0.0, min(1.0, float(item[2])))
+            if p_num and val > 0.05:
+                player_telemetry[p_num] = f"{trig_name}: {val:.2f}"
+            if trig_name in ('LT', 'L2', 'LEFT'):
+                ctrl.left_trigger_float(value_float=val)
+            elif trig_name in ('RT', 'R2', 'RIGHT'):
+                ctrl.right_trigger_float(value_float=val)
+            return True
+        elif code == 'r':  # Reset
+            ctrl.reset()
+            if p_num:
+                player_telemetry[p_num] = "Neutral"
+            return True
+        return False
+
+    if not isinstance(item, dict):
+        return False
+
     inp_type = str(item.get('type') or item.get('t', '')).lower()
 
     if inp_type in ('button', 'b'):
@@ -464,7 +529,7 @@ def run_server_thread():
     init_virtual_gamepads()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    runner = web.AppRunner(app)
+    runner = web.AppRunner(app, access_log=None)
     loop.run_until_complete(runner.setup())
     
     bound = False
