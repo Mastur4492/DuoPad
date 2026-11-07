@@ -301,8 +301,8 @@
             // Default Geometric Center (Ring center on screen)
             this.centerX = 0;
             this.centerY = 0;
-            this.maxRadius = 50; // Full travel radius (pixels)
-            this.deadzone = 0.05; // 5% clean deadzone
+            this.maxRadius = 42; // Perfectly proportioned travel radius
+            this.deadzone = 0.04; // 4% esports clean deadzone
 
             // Current state
             this.currentX = 0.0;
@@ -319,7 +319,8 @@
             const rect = (this.base || this.zone).getBoundingClientRect();
             this.centerX = rect.left + rect.width / 2;
             this.centerY = rect.top + rect.height / 2;
-            this.maxRadius = Math.max(38, Math.min(56, (rect.width - 48) / 2 + 10));
+            const knobSize = (this.knob && this.knob.offsetWidth) ? this.knob.offsetWidth : 44;
+            this.maxRadius = Math.max(28, Math.min(48, (rect.width - knobSize) / 2));
         }
 
         initEvents() {

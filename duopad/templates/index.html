@@ -342,8 +342,8 @@
             left: 13%;
             top: 46%;
             transform: translate(-50%, -50%);
-            width: clamp(135px, 20vw, 172px);
-            height: clamp(135px, 20vw, 172px);
+            width: clamp(118px, 17vw, 148px);
+            height: clamp(118px, 17vw, 148px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -365,6 +365,20 @@
             transition: box-shadow 0.15s, border-color 0.15s;
         }
 
+        .stick-ring::before {
+            content: '';
+            position: absolute;
+            width: 76%;
+            height: 76%;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 240, 255, 0.22);
+            pointer-events: none;
+        }
+
+        body.theme-p2 .stick-ring::before {
+            border-color: rgba(255, 45, 117, 0.25);
+        }
+
         .stick-ring.active-stick {
             box-shadow: 0 0 28px rgba(0, 229, 255, 0.75), inset 0 0 16px rgba(0, 0, 0, 0.9);
         }
@@ -374,8 +388,8 @@
         }
 
         .stick-knob {
-            width: clamp(48px, 7.2vw, 58px);
-            height: clamp(48px, 7.2vw, 58px);
+            width: clamp(42px, 6vw, 50px);
+            height: clamp(42px, 6vw, 50px);
             border-radius: 50%;
             background: var(--knob-color);
             position: absolute;
@@ -383,6 +397,20 @@
             pointer-events: none;
             transform: translate3d(0px, 0px, 0);
             will-change: transform;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stick-knob::after {
+            content: '';
+            width: 44%;
+            height: 44%;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+            pointer-events: none;
         }
 
         /* 3. Capsule D-Pad (Lower-Left Cross) */
@@ -570,8 +598,8 @@
             left: 54%;
             top: 81%;
             transform: translate(-50%, -50%);
-            width: clamp(135px, 20vw, 172px);
-            height: clamp(135px, 20vw, 172px);
+            width: clamp(118px, 17vw, 148px);
+            height: clamp(118px, 17vw, 148px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -779,7 +807,7 @@
 
     <!-- Scripts -->
     <script src="/static/socket.io.min.js"></script>
-    <script src="/static/controller.js?v=500"></script>
+    <script src="/static/controller.js?v=600"></script>
     <script>
         // Auto-enter fullscreen on first tap for immersive play
         function enterFullscreen() {
