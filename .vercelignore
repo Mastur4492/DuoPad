@@ -1,0 +1,6 @@
+duopad/
+*.py
+*.iss
+*.spec
+*.bat
+*.cs

@@ -1,0 +1,25 @@
+{
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/duopad-web",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/duopad-web/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/DuoPad_Setup.exe",
+      "destination": "https://raw.githubusercontent.com/Mastur4492/DuoPad/main/duopad-web/DuoPad_Setup.exe",
+      "permanent": false
+    },
+    {
+      "source": "/duopad-web/DuoPad_Setup.exe",
+      "destination": "https://raw.githubusercontent.com/Mastur4492/DuoPad/main/duopad-web/DuoPad_Setup.exe",
+      "permanent": false
+    }
+  ]
+}
